@@ -291,6 +291,17 @@
   .promo-btn:hover { border-color: var(--brass); }
   .promo-btn .piece-icon { width: 36px; height: 36px; filter: none; }
 
+  #historyModal .modal-card { max-width: 520px; text-align: left; }
+  #historyModal .desc { margin: 6px 0 14px; }
+  #historyModal .actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+  #historyListWrap { max-height: 50vh; overflow-y: auto; }
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .history-row {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    text-align: left; width: 100%; padding: 10px 12px; border-radius: 10px;
+  }
+  .history-row-meta { color: var(--ink-soft); font-size: .85em; }
+
   footer.note { color: var(--ink-soft); font-size: .78rem; line-height: 1.6; max-width: 80ch; }
 
   @media (max-width: 880px) {
@@ -335,6 +346,8 @@
       <button class="btn small" id="stepFwdBtn" type="button" title="Mostra la mossa successiva" disabled>Avanti ▶</button>
       <button class="btn primary small" id="pauseBtn" type="button">Pausa</button>
       <button class="btn primary small" id="newGameBtn" type="button" hidden>Nuova partita</button>
+      <button class="btn small ghost" id="historyBtn" type="button">Cronologia</button>
+      <button class="btn small" id="archiveExitBtn" type="button" hidden>Torna alla partita</button>
       <button class="btn ghost small" id="setupBtn" type="button">Impostazioni</button>
     </div>
   </header>
@@ -354,6 +367,7 @@
         <button class="btn small ghost" id="exportBtn" type="button">Esporta</button>
         <label class="btn small ghost file-label" for="importInput">Importa</label>
         <input type="file" id="importInput" accept="application/json" hidden>
+        <button class="btn small ghost" id="historyBtnSetup" type="button">Cronologia partite</button>
         <button class="btn link" id="resetBtn" type="button">Ricomincia da zero</button>
       </div>
     </div>
@@ -498,6 +512,17 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="historyModal" hidden>
+  <div class="modal-card">
+    <h3>Cronologia partite</h3>
+    <p class="desc">Le ultime partite concluse, salvate in questo browser. Clicca una partita per rivederla mossa per mossa sulla scacchiera.</p>
+    <div id="historyListWrap"></div>
+    <div class="actions">
+      <button class="btn" id="historyCloseBtn" type="button">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -507,6 +532,7 @@
    passant, promozione, scacco/matto/stallo tutti validati).
    ===================================================================== */
 const Chess = (function () {
+  const MAX_PLIES = 500; // rete di sicurezza anti-partita-infinita, v. gameStatus()
   const FILES = 'abcdefgh';
   function fileOf(s) { return s % 8; }
   function rankOf(s) { return (s / 8) | 0; }
@@ -769,6 +795,14 @@ const Chess = (function () {
       const key = positionKey(state);
       if ((positionCounts.get(key) || 0) >= 3) return { over: true, result: '1/2-1/2', reason: 'tripla ripetizione', check };
     }
+    // Rete di sicurezza: la regola delle 50 mosse si azzera ad ogni cattura o
+    // mossa di pedone, quindi una partita con molti scambi/spinte di pedoni
+    // ma senza una vera conclusione può restare "viva" per centinaia di
+    // semimosse (non è un loop infinito: il contatore avanza comunque). Oltre
+    // questa soglia, decisamente più larga di qualunque partita reale, la
+    // partita viene chiusa in patta per non restare bloccata a tempo
+    // indefinito.
+    if (state.history.length >= MAX_PLIES) return { over: true, result: '1/2-1/2', reason: 'adjudicata: troppe mosse senza una conclusione naturale', check };
     return { over: false, check, legalMoves: legal };
   }
 
@@ -1223,7 +1257,7 @@ const RemoteStore = (function () {
     'startBtn', 'resumeBtn',
     'headerControls', 'depthLiveWrap', 'delayLiveWrap', 'depthLive', 'delayLive',
     'postGameDelayLiveWrap', 'postGameDelayLive', 'postGameDelayApplyBtn', 'pauseBtn', 'newGameBtn', 'setupBtn',
-    'stepBackBtn', 'stepFwdBtn',
+    'stepBackBtn', 'stepFwdBtn', 'historyBtn', 'historyBtnSetup', 'archiveExitBtn', 'historyModal', 'historyListWrap', 'historyCloseBtn',
     'stage', 'lab', 'labTrain', 'labPlay', 'board', 'boardCaption',
     'turnDot', 'turnLabel', 'statusPill',
     'logWhite', 'logBlack', 'countWhite', 'countBlack', 'capByWhite', 'capByBlack', 'winsWhite', 'winsBlack',
@@ -1264,8 +1298,29 @@ const RemoteStore = (function () {
       matchScoreChallenger: 0, matchScoreChampion: 0, matchGamesPlayed: 0,
       challengerColor: 'w', history: [],
       humanStats: { games: 0, wins: 0, draws: 0, losses: 0 },
-      whiteWins: 0, blackWins: 0, drawGames: 0
+      whiteWins: 0, blackWins: 0, drawGames: 0,
+      gamesArchive: []
     };
+  }
+
+  // Numero massimo di partite concluse tenute in archivio per la revisione
+  // (le più vecchie vengono scartate): con partite anche di centinaia di
+  // semimosse, un archivio troppo grande appesantirebbe inutilmente il
+  // salvataggio locale.
+  const MAX_ARCHIVE_GAMES = 20;
+
+  function recordGameToArchive(state, status, mode) {
+    if (!training.gamesArchive) training.gamesArchive = [];
+    training.gamesArchive.push({
+      date: new Date().toISOString(),
+      result: status.result,
+      reason: status.reason,
+      plyCount: state.history.length,
+      moves: state.history.slice(),
+      mode,
+      generation: training.generation
+    });
+    while (training.gamesArchive.length > MAX_ARCHIVE_GAMES) training.gamesArchive.shift();
   }
 
   /* Aggiorna il conteggio delle partite vinte dal Bianco e dal Nero (a
@@ -1291,6 +1346,8 @@ const RemoteStore = (function () {
   let timerId = null;
   let postGameCountdownId = null;
   let viewPly = null; // null = vista dal vivo; altrimenti n. di semi-mosse mostrate rivedendo la cronologia
+  let archiveMoves = null; // non-null mentre si rivede una partita salvata in cronologia (invece della partita dal vivo)
+  let archiveMeta = null;
 
   /* ---------------- persistenza ---------------- */
   function serializeTraining(t) {
@@ -1300,6 +1357,7 @@ const RemoteStore = (function () {
       matchGamesPlayed: t.matchGamesPlayed, challengerColor: t.challengerColor, history: t.history.slice(-60),
       humanStats: t.humanStats,
       whiteWins: t.whiteWins || 0, blackWins: t.blackWins || 0, drawGames: t.drawGames || 0,
+      gamesArchive: t.gamesArchive || [],
       updatedAt: new Date().toISOString()
     };
   }
@@ -1310,7 +1368,8 @@ const RemoteStore = (function () {
       matchScoreChallenger: d.matchScoreChallenger || 0, matchScoreChampion: d.matchScoreChampion || 0,
       matchGamesPlayed: d.matchGamesPlayed || 0, challengerColor: d.challengerColor || 'w', history: d.history || [],
       humanStats: Object.assign({ games: 0, wins: 0, draws: 0, losses: 0 }, d.humanStats || {}),
-      whiteWins: d.whiteWins || 0, blackWins: d.blackWins || 0, drawGames: d.drawGames || 0
+      whiteWins: d.whiteWins || 0, blackWins: d.blackWins || 0, drawGames: d.drawGames || 0,
+      gamesArchive: d.gamesArchive || []
     };
   }
 
@@ -1323,7 +1382,11 @@ const RemoteStore = (function () {
     // immediata. Il server accetta l'aggiornamento solo se non è più
     // indietro di quello già salvato (stesso criterio di pickNewer), così
     // due computer usati in momenti diversi non si "retrocedono" a vicenda.
-    RemoteStore.pushRemote(data).then((res) => {
+    // L'archivio delle partite (potenzialmente pesante, con centinaia di
+    // mosse a partita) resta volutamente FUORI dal cervello condiviso: è
+    // una comodità solo per questo browser, non fa parte dell'apprendimento.
+    const cloudData = Object.assign({}, data); delete cloudData.gamesArchive;
+    RemoteStore.pushRemote(cloudData).then((res) => {
       remoteStatus.checked = true;
       remoteStatus.ok = !!res.reachable;
       updatePersistUI();
@@ -1405,6 +1468,13 @@ const RemoteStore = (function () {
     remoteStatus.ok = remoteResult.reachable;
     if (remoteResult.data) best = LocalStore.pickNewer(best, remoteResult.data);
     if (best) training = trainingFromData(best);
+    // Il cervello condiviso su Netlify non porta mai con sé l'archivio
+    // partite (per scelta, v. persistNow): se ha "vinto" lui il confronto,
+    // la cronologia locale non va persa, va solo recuperata da dove c'era
+    // già (prima il file collegato, altrimenti il browser).
+    if (!training.gamesArchive || !training.gamesArchive.length) {
+      training.gamesArchive = (fileResult && fileResult.gamesArchive) || (local && local.gamesArchive) || [];
+    }
     persistNow();
     refreshAllUI();
     updatePersistUI(pendingHandle);
@@ -1631,6 +1701,7 @@ const RemoteStore = (function () {
     training.matchGamesPlayed++;
     training.totalGames++;
     recordColorResult(status);
+    recordGameToArchive(game.state, status, 'train');
 
     if (training.matchGamesPlayed >= MATCH_GAMES) {
       const promoted = training.matchScoreChallenger > training.matchScoreChampion;
@@ -1732,6 +1803,18 @@ const RemoteStore = (function () {
   }
 
   function renderHistoryView() {
+    if (archiveMoves) {
+      const total = archiveMoves.length;
+      const ply = viewPly === null ? total : viewPly;
+      const st = replayToPly(archiveMoves, ply);
+      const lastMove = ply > 0 ? archiveMoves[ply - 1] : null;
+      renderBoard(st, lastMove, { instant: true });
+      const posizione = ply >= total ? `posizione finale (mossa ${ply} di ${total})` : `mossa ${ply} di ${total}`;
+      renderReadout(st.turn, { text: `${archiveMeta.label} — ${posizione}`, check: Chess.inCheck(st, st.turn) });
+      els.stepBackBtn.disabled = ply <= 0;
+      els.stepFwdBtn.disabled = ply >= total;
+      return;
+    }
     if (!game || settings.mode !== 'train') return;
     const history = game.state.history;
     const total = history.length;
@@ -1761,6 +1844,7 @@ const RemoteStore = (function () {
   }
 
   function stepBack() {
+    if (archiveMoves) { viewPly = Math.max(0, (viewPly === null ? archiveMoves.length : viewPly) - 1); renderHistoryView(); return; }
     if (!game || settings.mode !== 'train') return;
     stopForReview();
     const total = game.state.history.length;
@@ -1769,6 +1853,7 @@ const RemoteStore = (function () {
   }
 
   function stepForward() {
+    if (archiveMoves) { viewPly = Math.min(archiveMoves.length, (viewPly === null ? 0 : viewPly) + 1); renderHistoryView(); return; }
     if (!game || settings.mode !== 'train' || viewPly === null) return;
     const total = game.state.history.length;
     viewPly = Math.min(total, viewPly + 1);
@@ -1776,8 +1861,96 @@ const RemoteStore = (function () {
     renderHistoryView();
   }
 
+  /* ---------------- cronologia partite ---------------- */
+  function formatDateIt(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('it-IT') + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso; }
+  }
+
+  function renderHistoryList() {
+    const games = (training.gamesArchive || []).slice().reverse(); // più recenti prima
+    if (!games.length) {
+      els.historyListWrap.innerHTML = '<p class="desc">Nessuna partita salvata ancora: le partite concluse da qui in avanti compariranno in questo elenco.</p>';
+      return;
+    }
+    els.historyListWrap.innerHTML = '';
+    const list = document.createElement('div');
+    list.className = 'history-list';
+    games.forEach((g) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'btn history-row';
+      const modeLabel = g.mode === 'play' ? 'Partita amichevole' : `Addestramento · generazione ${g.generation}`;
+      row.innerHTML = `<span>${formatDateIt(g.date)} — ${result_it({ result: g.result })} (${g.reason})</span><span class="history-row-meta">${modeLabel} · ${g.plyCount} semimosse</span>`;
+      row.addEventListener('click', () => openArchivedGame(g));
+      list.appendChild(row);
+    });
+    els.historyListWrap.appendChild(list);
+  }
+
+  function showHistoryModal() { renderHistoryList(); els.historyModal.hidden = false; }
+  function hideHistoryModal() { els.historyModal.hidden = true; }
+
+  function openArchivedGame(entry) {
+    stopForReview();
+    hideHistoryModal();
+    archiveMoves = entry.moves;
+    archiveMeta = { label: `Partita del ${formatDateIt(entry.date)}` };
+    viewPly = null; // = posizione finale, in renderHistoryView per l'archivio
+    els.setupPanel.hidden = true;
+    els.stage.hidden = false;
+    els.lab.hidden = true;
+    els.headerControls.hidden = false;
+    setArchiveModeUI(true);
+    renderHistoryView();
+  }
+
+  function closeArchivedGame() {
+    archiveMoves = null; archiveMeta = null; viewPly = null;
+    setArchiveModeUI(false);
+    if (game) {
+      els.lab.hidden = settings.mode !== 'train';
+      renderHistoryView();
+      if (settings.mode !== 'train') { renderBoard(game.state, game.lastMove, { instant: true }); updateBoardInteractivity(); renderHumanStats(); }
+    } else {
+      els.stage.hidden = true;
+      els.headerControls.hidden = true;
+      els.setupPanel.hidden = false;
+    }
+  }
+
+  // Attiva/disattiva i controlli d'intestazione dedicati alla revisione di
+  // una partita d'archivio: Indietro/Avanti restano sempre disponibili (in
+  // partita amichevole normalmente sono nascosti), il resto dei controlli
+  // di addestramento/gioco dal vivo viene nascosto finché si sta rivedendo
+  // l'archivio, e ripristinato correttamente da configureHeaderForMode()
+  // quando si torna alla partita dal vivo.
+  function setArchiveModeUI(active) {
+    els.archiveExitBtn.hidden = !active;
+    if (active) {
+      els.stepBackBtn.hidden = false;
+      els.stepFwdBtn.hidden = false;
+      els.pauseBtn.hidden = true;
+      els.newGameBtn.hidden = true;
+      els.depthLiveWrap.hidden = true;
+      els.delayLiveWrap.hidden = true;
+      els.postGameDelayLiveWrap.hidden = true;
+      els.setupBtn.hidden = true;
+    } else {
+      configureHeaderForMode();
+      els.setupBtn.hidden = false;
+    }
+  }
+
   els.stepBackBtn.addEventListener('click', stepBack);
   els.stepFwdBtn.addEventListener('click', stepForward);
+  els.historyBtn.addEventListener('click', () => { stopForReview(); showHistoryModal(); });
+  els.historyBtnSetup.addEventListener('click', () => { showHistoryModal(); });
+  els.historyCloseBtn.addEventListener('click', hideHistoryModal);
+  els.historyModal.addEventListener('click', (e) => { if (e.target === els.historyModal) hideHistoryModal(); });
+  els.archiveExitBtn.addEventListener('click', closeArchivedGame);
 
   /* ---------------- modalità partita (umano contro il motore) ---------------- */
   function startPlayGame() {
@@ -1920,6 +2093,7 @@ const RemoteStore = (function () {
     else if ((status.result === '1-0') === (settings.humanColor === 'w')) training.humanStats.wins++;
     else training.humanStats.losses++;
     recordColorResult(status);
+    recordGameToArchive(game.state, status, 'play');
     persistNow();
     renderHumanStats();
   }
