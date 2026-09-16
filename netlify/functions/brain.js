@@ -15,8 +15,23 @@ const { getStore } = require('@netlify/blobs');
 const KEY = 'shared-brain';
 const STORE_NAME = 'scacchi-autodidatta';
 
+// In teoria Netlify inietta automaticamente le credenziali di Blobs nelle
+// funzioni (basterebbe getStore(STORE_NAME)). Su questo progetto però
+// l'iniezione automatica non arriva alla funzione (errore
+// "MissingBlobsEnvironmentError"), quindi le forniamo esplicitamente tramite
+// due variabili d'ambiente da impostare in Netlify (Project configuration →
+// Environment variables): NETLIFY_SITE_ID (il Project/Site ID, non
+// segreto) e NETLIFY_BLOBS_TOKEN (un Personal Access Token di Netlify,
+// segreto — mai scritto nel codice).
+function openStore() {
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN;
+  if (siteID && token) return getStore({ name: STORE_NAME, siteID, token });
+  return getStore(STORE_NAME);
+}
+
 exports.handler = async (event) => {
-  const store = getStore(STORE_NAME);
+  const store = openStore();
 
   if (event.httpMethod === 'GET') {
     try {
