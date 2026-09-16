@@ -247,13 +247,14 @@
     width: 82%; height: 82%; display: block; user-select: none;
     filter: drop-shadow(0 2px 2px rgba(20, 24, 16, .32));
   }
-  .piece-icon.white { fill: var(--piece-white); stroke: var(--piece-stroke); stroke-width: 3.2; }
-  .piece-icon.black { fill: var(--piece-black); stroke: var(--piece-stroke); stroke-width: 3.2; }
+  .piece-icon.white { fill: var(--piece-white); stroke: var(--piece-stroke); stroke-width: 5.2; }
+  .piece-icon.black { fill: var(--piece-black); stroke: var(--piece-stroke); stroke-width: 5.2; }
   .piece-icon path, .piece-icon rect, .piece-icon circle, .piece-icon ellipse, .piece-icon line, .piece-icon polygon {
     stroke-linejoin: round; stroke-linecap: round;
   }
   .piece-icon .pc-shine { fill: #ffffff !important; stroke: none !important; opacity: .28; }
   .piece-icon .pc-ring { fill: none !important; }
+  .piece-icon .pc-eye { fill: var(--piece-stroke) !important; stroke: none !important; }
   .cap-piece .piece-icon { width: 22px; height: 22px; filter: none; }
   .cap-piece { display: inline-flex; }
 
@@ -302,12 +303,12 @@
 </style>
 
 <svg class="piece-defs" style="position:absolute; width:0; height:0; overflow:hidden" aria-hidden="true">
-  <symbol id="pc-P" viewBox="0 0 100 100"><rect x="27" y="83" width="46" height="10" rx="5"/><path d="M36,83 C34,74 38,68 44,66 C40,62 38,57 40,51 C33,48 29,41 32,33 C34,27 41,23 50,23 C59,23 66,27 68,33 C71,41 67,48 60,51 C62,57 60,62 56,66 C62,68 66,74 64,83 Z"/><ellipse class="pc-shine" cx="41" cy="36" rx="6" ry="9"/></symbol>
-  <symbol id="pc-R" viewBox="0 0 100 100"><rect x="24" y="83" width="52" height="10" rx="5"/><path d="M32,83 C30,70 31,58 36,48 L64,48 C69,58 70,70 68,83 Z"/><rect x="30" y="40" width="40" height="9" rx="2"/><rect x="32" y="23" width="11" height="18" rx="2.5"/><rect x="44.5" y="23" width="11" height="18" rx="2.5"/><rect x="57" y="23" width="11" height="18" rx="2.5"/><ellipse class="pc-shine" cx="40" cy="60" rx="6" ry="16"/></symbol>
-  <symbol id="pc-B" viewBox="0 0 100 100"><rect x="28" y="83" width="44" height="10" rx="5"/><rect x="36" y="73" width="28" height="11" rx="5"/><path d="M50,22 C40,28 33,41 35,56 C36,64 40,70 45,74 L55,74 C60,70 64,64 65,56 C67,41 60,28 50,22 Z"/><path class="pc-ring" d="M38,45 Q50,34 62,43" stroke-width="5.5"/><circle cx="50" cy="13" r="8"/><ellipse class="pc-shine" cx="43" cy="50" rx="5" ry="14"/></symbol>
-  <symbol id="pc-N" viewBox="0 0 100 100"><rect x="24" y="83" width="52" height="10" rx="5"/><path d="M70,83 L40,83 L36,48 L60,44 Z"/><ellipse cx="37" cy="38" rx="18" ry="16"/><ellipse cx="19" cy="43" rx="10" ry="7.5"/><polygon points="45,25 38,8 31,26"/><circle class="pc-ring" cx="33" cy="37" r="2.8" stroke-width="2.4"/><ellipse class="pc-shine" cx="58" cy="46" rx="5" ry="12"/></symbol>
-  <symbol id="pc-Q" viewBox="0 0 100 100"><rect x="26" y="83" width="48" height="10" rx="5"/><path d="M35,74 C32,62 34,49 40,40 L60,40 C66,49 68,62 65,74 Z"/><path d="M39,40 L33,20 L43,31 L47,15 L50,13 L53,15 L57,31 L67,20 L61,40 Z"/><circle cx="33" cy="18" r="5"/><circle cx="50" cy="12" r="5.4"/><circle cx="67" cy="18" r="5"/><circle cx="41" cy="25" r="3.6"/><circle cx="59" cy="25" r="3.6"/><ellipse class="pc-shine" cx="42" cy="54" rx="5" ry="16"/></symbol>
-  <symbol id="pc-K" viewBox="0 0 100 100"><rect x="26" y="83" width="48" height="10" rx="5"/><path d="M35,74 C32,62 34,49 40,40 L60,40 C66,49 68,62 65,74 Z"/><rect x="31" y="58" width="38" height="8" rx="4"/><path d="M37,40 L35,29 L65,29 L63,40 Z"/><rect x="45" y="7" width="10" height="25" rx="2.5"/><rect x="34" y="16" width="32" height="9" rx="2.5"/><ellipse class="pc-shine" cx="42" cy="54" rx="5" ry="16"/></symbol>
+  <symbol id="pc-P" viewBox="0 0 100 100"><circle cx="50" cy="34" r="16"/><path d="M38,48 C34,56 32,64 34,72 L66,72 C68,64 66,56 62,48 Z"/><rect x="26" y="72" width="48" height="15" rx="7"/><ellipse class="pc-shine" cx="44" cy="29" rx="5" ry="7"/></symbol>
+  <symbol id="pc-R" viewBox="0 0 100 100"><path d="M26,40 L26,22 L38,22 L38,28 L46,28 L46,22 L54,22 L54,28 L62,28 L62,22 L74,22 L74,40 L68,48 L68,72 L32,72 L32,48 Z"/><rect x="22" y="72" width="56" height="15" rx="7"/><rect class="pc-shine" x="32" y="44" width="7" height="26" rx="3"/></symbol>
+  <symbol id="pc-B" viewBox="0 0 100 100"><circle cx="50" cy="17" r="6.5"/><path d="M50,26 C62,34 68,48 64,60 C62,66 58,70 58,70 L42,70 C42,70 38,66 36,60 C32,48 38,34 50,26 Z"/><path class="pc-ring" d="M38,48 L62,48" stroke-width="6"/><rect x="38" y="70" width="24" height="9" rx="4"/><rect x="28" y="79" width="44" height="12" rx="6"/><ellipse class="pc-shine" cx="43" cy="45" rx="5" ry="12"/></symbol>
+  <symbol id="pc-N" viewBox="0 0 100 100"><path d="M20,55 C17,48 20,41 26,36 C23,29 27,22 34,17 C38,11 44,7 49,11 L47,3 L59,17 C67,14 76,18 83,25 C77,31 78,38 87,42 C81,47 81,54 91,58 C85,63 82,70 84,88 L30,88 C30,74 25,65 23,56 C20,58 20,57 20,55 Z"/><circle class="pc-eye" cx="35" cy="30" r="3.2"/><rect x="26" y="88" width="62" height="10" rx="5"/></symbol>
+  <symbol id="pc-Q" viewBox="0 0 100 100"><circle cx="24" cy="26" r="6"/><circle cx="50" cy="18" r="7"/><circle cx="76" cy="26" r="6"/><circle cx="37" cy="30" r="5"/><circle cx="63" cy="30" r="5"/><path d="M24,30 L30,52 L70,52 L76,30 L63,34 L58,24 L50,34 L42,24 L37,34 Z"/><path d="M32,52 C28,60 27,68 30,76 L70,76 C73,68 72,60 68,52 Z"/><rect x="24" y="76" width="52" height="14" rx="7"/><ellipse class="pc-shine" cx="40" cy="58" rx="5" ry="10"/></symbol>
+  <symbol id="pc-K" viewBox="0 0 100 100"><rect x="45" y="4" width="10" height="24" rx="3"/><rect x="37" y="13" width="26" height="9" rx="3"/><path d="M50,26 C60,26 68,33 68,44 C68,50 65,55 60,58 L40,58 C35,55 32,50 32,44 C32,33 40,26 50,26 Z"/><path d="M34,58 C29,66 27,74 30,82 L70,82 C73,74 71,66 66,58 Z"/><rect x="24" y="82" width="52" height="14" rx="7"/><ellipse class="pc-shine" cx="41" cy="66" rx="5" ry="10"/></symbol>
 </svg>
 
 <div class="wrap">
@@ -324,6 +325,11 @@
       <div class="field" id="delayLiveWrap">
         <label for="delayLive">Ritardo (ms)</label>
         <input id="delayLive" type="number" min="100" max="4000" step="50" style="width:80px">
+      </div>
+      <div class="field" id="postGameDelayLiveWrap">
+        <label for="postGameDelayLive">Pausa fine partita (s)</label>
+        <input id="postGameDelayLive" type="number" min="0" max="600" step="1" style="width:70px">
+        <button class="btn small" id="postGameDelayApplyBtn" type="button">Imposta</button>
       </div>
       <button class="btn small" id="stepBackBtn" type="button" title="Mostra la mossa precedente">◀ Indietro</button>
       <button class="btn small" id="stepFwdBtn" type="button" title="Mostra la mossa successiva" disabled>Avanti ▶</button>
@@ -370,6 +376,11 @@
       <div class="field">
         <label for="delaySetup">Ritardo tra le mosse: <span id="delayVal">600</span> ms</label>
         <input id="delaySetup" type="range" min="100" max="2500" step="50" value="600">
+      </div>
+      <div class="field">
+        <label for="postGameDelaySetup">Pausa a fine di ogni partita (secondi)</label>
+        <input id="postGameDelaySetup" type="number" min="0" max="600" step="1" value="0" style="width:100px">
+        <p class="hint" style="margin:6px 0 0; font-size:.85em; opacity:.75;">Se lasci 0 il motore passa subito alla partita successiva, come oggi. Con un valore maggiore di 0 si ferma per quei secondi a fine partita prima di ricominciare.</p>
       </div>
     </div>
 
@@ -808,9 +819,24 @@ const EvalSearch = (function () {
     const board = state.board;
     for (let s = 0; s < 64; s++) {
       const p = board[s]; if (!p) continue;
-      const type = p.toUpperCase(); const val = pieceValue(type, w);
+      const type = p.toUpperCase();
       const white = Chess.colorOf(p) === 'w';
-      material += white ? val : -val;
+      // Il Re non ha un "valore" materiale (non può mai essere catturato: la
+      // partita finisce prima con scacco matto), quindi non entra nella somma
+      // del materiale — solo la sua posizione (tabella PST) conta, per
+      // preferire un re al sicuro/attivo. BUG STORICO CORRETTO: prima si
+      // sommava pieceValue('K', w), cioè w.K, che non esiste in nessun set di
+      // pesi (solo N,B,R,Q sono definiti) — il risultato era `material`
+      // sempre NaN, che si propagava a TUTTA la valutazione statica (NaN in
+      // ogni confronto è sempre "false", quindi la ricerca perdeva quasi ogni
+      // guida posizionale/di piano e finiva per giocare mosse quiete quasi a
+      // caso non appena non c'era una cattura o un matto forzato a vista:
+      // questa è la causa principale delle partite che non finivano mai con
+      // una vittoria).
+      if (type !== 'K') {
+        const val = pieceValue(type, w);
+        material += white ? val : -val;
+      }
       const table = white ? PST_W[type] : PST_B[type];
       pst += white ? table[s] : -table[s];
     }
@@ -944,11 +970,25 @@ const EvalSearch = (function () {
     // motore può (e deve) guardare molto più lontano: senza questo la ricerca
     // resta bloccata alla profondità "da apertura" e non trova mai il matto
     // con pochi pezzi sulla scacchiera, limitandosi a girare a vuoto.
+    // Il bonus è relativo alla profondità scelta dall'utente (non un valore
+    // assoluto): meno pezzi restano sulla scacchiera, più semi-mosse in più
+    // il motore può permettersi entro lo stesso budget di tempo, perché il
+    // fattore di diramazione scende. Questo aiuta anche il normale
+    // mediogioco/finale (non solo i casi estremi) a trovare più spesso
+    // combinazioni vincenti invece di limitarsi a non peggiorare.
     const pieceCount = state.board.reduce((n, p) => n + (p ? 1 : 0), 0);
-    let maxDepthEff = maxDepth;
-    if (pieceCount <= 6) maxDepthEff = Math.max(maxDepth, 9);
-    else if (pieceCount <= 10) maxDepthEff = Math.max(maxDepth, 7);
-    else if (pieceCount <= 14) maxDepthEff = Math.max(maxDepth, 5);
+    let depthBoost = 0;
+    if (pieceCount <= 6) depthBoost = 6;
+    else if (pieceCount <= 10) depthBoost = 4;
+    else if (pieceCount <= 14) depthBoost = 2;
+    // Nessun bonus con più di 14 pezzi sulla scacchiera: in apertura e a
+    // centro partita il fattore di diramazione è alto, quindi approfondire
+    // qui costerebbe moltissimo tempo per pochissimo guadagno e rallenterebbe
+    // drasticamente l'autoapprendimento (meno partite giocate = meno
+    // generazioni). Il bonus serve solo dove conta davvero: i finali con
+    // pochi pezzi, dove il motore deve calcolare più a fondo per trovare il
+    // matto invece di limitarsi a non peggiorare.
+    let maxDepthEff = maxDepth + depthBoost;
     // Un re rimasto solo (o quasi) va sempre cercato in profondità per trovare
     // davvero la rete di matto, anche quando il lato forte ha ancora molti
     // pezzi (il che allarga l'albero ma resta l'unico modo per non "girare
@@ -1127,6 +1167,44 @@ const LocalStore = (function () {
 })();
 
 /* =====================================================================
+   CERVELLO CONDIVISO SU NETLIFY — sincronizza i pesi/le statistiche
+   tramite una funzione serverless (Netlify Functions + Netlify Blobs), in
+   modo che l'apprendimento continui ad accumularsi da qualunque computer
+   si apra il sito, invece di restare chiuso nel localStorage del singolo
+   browser. Se la funzione non è raggiungibile (sito aperto localmente,
+   offline, funzione non ancora distribuita) tutto continua a funzionare
+   solo in locale esattamente come prima: nessun percorso del gioco
+   dipende dal successo di queste chiamate.
+   ===================================================================== */
+const RemoteStore = (function () {
+  const ENDPOINT = '/.netlify/functions/brain';
+
+  async function fetchRemote() {
+    try {
+      const res = await fetch(ENDPOINT, { method: 'GET', cache: 'no-store' });
+      if (!res.ok) return { reachable: false, data: null };
+      const data = await res.json();
+      return { reachable: true, data: (data && data.champion) ? data : null };
+    } catch (e) { return { reachable: false, data: null }; }
+  }
+
+  async function pushRemote(data) {
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) return { reachable: false, saved: false };
+      const body = await res.json().catch(() => ({}));
+      return Object.assign({ reachable: true }, body);
+    } catch (e) { return { reachable: false, saved: false }; }
+  }
+
+  return { fetchRemote, pushRemote };
+})();
+
+/* =====================================================================
    APP: rendering, self-play, apprendimento evolutivo, modalità partita,
    persistenza locale.
    ===================================================================== */
@@ -1141,9 +1219,10 @@ const LocalStore = (function () {
 
   const els = {};
   ['setupPanel', 'persistBar', 'persistStatus', 'persistProgress', 'connectFileBtn', 'reconnectFileBtn', 'exportBtn', 'importInput', 'resetBtn',
-    'depthSetup', 'delaySetup', 'delayVal', 'playParams', 'trainParams', 'depthPlay',
+    'depthSetup', 'delaySetup', 'delayVal', 'postGameDelaySetup', 'playParams', 'trainParams', 'depthPlay',
     'startBtn', 'resumeBtn',
-    'headerControls', 'depthLiveWrap', 'delayLiveWrap', 'depthLive', 'delayLive', 'pauseBtn', 'newGameBtn', 'setupBtn',
+    'headerControls', 'depthLiveWrap', 'delayLiveWrap', 'depthLive', 'delayLive',
+    'postGameDelayLiveWrap', 'postGameDelayLive', 'postGameDelayApplyBtn', 'pauseBtn', 'newGameBtn', 'setupBtn',
     'stepBackBtn', 'stepFwdBtn',
     'stage', 'lab', 'labTrain', 'labPlay', 'board', 'boardCaption',
     'turnDot', 'turnLabel', 'statusPill',
@@ -1156,10 +1235,11 @@ const LocalStore = (function () {
 
   for (const d of [2, 3, 4, 5]) { const o = document.createElement('option'); o.value = d; o.textContent = d; els.depthLive.appendChild(o); }
 
-  let settings = { mode: 'train', depth: 3, delay: 600, humanColor: 'w' };
+  let settings = { mode: 'train', depth: 3, delay: 600, postGameDelaySec: 0, humanColor: 'w' };
   let fileHandle = null;
   let fileName = null;
   let saveChain = Promise.resolve();
+  let remoteStatus = { checked: false, ok: false };
 
   function freshWeights() { return Object.assign({}, EvalSearch.DEFAULT_WEIGHTS); }
 
@@ -1209,6 +1289,7 @@ const LocalStore = (function () {
   let game = null;
   let running = false;
   let timerId = null;
+  let postGameCountdownId = null;
   let viewPly = null; // null = vista dal vivo; altrimenti n. di semi-mosse mostrate rivedendo la cronologia
 
   /* ---------------- persistenza ---------------- */
@@ -1237,6 +1318,16 @@ const LocalStore = (function () {
     const data = serializeTraining(training);
     LocalStore.saveLocalStorage(data);
     if (fileHandle) saveChain = saveChain.then(() => LocalStore.writeHandle(fileHandle, data));
+    // Invio al cervello condiviso in modo "fire-and-forget": non blocca mai
+    // il gioco né il salvataggio locale, che restano la fonte di verità
+    // immediata. Il server accetta l'aggiornamento solo se non è più
+    // indietro di quello già salvato (stesso criterio di pickNewer), così
+    // due computer usati in momenti diversi non si "retrocedono" a vicenda.
+    RemoteStore.pushRemote(data).then((res) => {
+      remoteStatus.checked = true;
+      remoteStatus.ok = !!res.reachable;
+      updatePersistUI();
+    });
   }
 
   function updatePersistUI(pendingHandle) {
@@ -1245,6 +1336,11 @@ const LocalStore = (function () {
     else if (pendingHandle) statusTxt = `Il file "${pendingHandle.name}" era collegato in precedenza: clicca "Ricollega file" per riattivarlo.`;
     else if (LocalStore.supportsFSAccess()) statusTxt = 'Nessun file locale collegato — i progressi restano salvati in questo browser.';
     else statusTxt = 'Il tuo browser non supporta il collegamento diretto a un file: i progressi restano salvati in questo browser. Usa "Esporta" per una copia su file.';
+    if (remoteStatus.checked) {
+      statusTxt += remoteStatus.ok
+        ? ' Sincronizzato anche con il cervello condiviso su Netlify: puoi continuare da qualsiasi computer.'
+        : ' Il cervello condiviso su Netlify non è raggiungibile in questo momento: si continua comunque in locale.';
+    }
     els.persistStatus.textContent = statusTxt;
     els.persistProgress.textContent = training.totalGames > 0
       ? `Generazione ${training.generation} · ${training.totalGames} partite giocate · ${training.promotions} promozioni salvate.`
@@ -1303,7 +1399,11 @@ const LocalStore = (function () {
         }
       } catch (e) { /* nessun file riagganciabile */ }
     }
-    const best = LocalStore.pickNewer(local, fileResult);
+    let best = LocalStore.pickNewer(local, fileResult);
+    const remoteResult = await RemoteStore.fetchRemote();
+    remoteStatus.checked = true;
+    remoteStatus.ok = remoteResult.reachable;
+    if (remoteResult.data) best = LocalStore.pickNewer(best, remoteResult.data);
     if (best) training = trainingFromData(best);
     persistNow();
     refreshAllUI();
@@ -1547,9 +1647,35 @@ const LocalStore = (function () {
 
   function endCurrentGame(status) {
     const state = game.state;
-    renderReadout(state.turn, { text: `${result_it(status)} — ${status.reason}`, check: false });
+    // Pausa a fine partita: se l'utente ha impostato un valore > 0 (in
+    // secondi) il motore si ferma davvero per quel tempo prima di iniziare
+    // la partita successiva, mostrando un conto alla rovescia. Se non è
+    // configurata (0, il default) il comportamento resta quello di sempre:
+    // passa subito alla partita successiva con il solo, breve intervallo tra
+    // le mosse già previsto.
+    const pauseSec = settings.postGameDelaySec || 0;
+    const baseText = `${result_it(status)} — ${status.reason}`;
+    renderReadout(state.turn, { text: pauseSec > 0 ? `${baseText} — pausa di ${pauseSec}s…` : baseText, check: false });
     finalizeGame(status);
-    setTimeout(() => { if (running && settings.mode === 'train') { newGameSetup(); scheduleNext(0); } }, Math.max(400, settings.delay));
+    if (pauseSec > 0) {
+      let remaining = pauseSec;
+      clearInterval(postGameCountdownId);
+      postGameCountdownId = setInterval(() => {
+        remaining--;
+        if (!running || settings.mode !== 'train') { clearInterval(postGameCountdownId); return; }
+        if (remaining > 0) {
+          renderReadout(state.turn, { text: `${baseText} — pausa di ${remaining}s…`, check: false });
+        } else {
+          clearInterval(postGameCountdownId);
+        }
+      }, 1000);
+      setTimeout(() => {
+        clearInterval(postGameCountdownId);
+        if (running && settings.mode === 'train') { newGameSetup(); scheduleNext(0); }
+      }, pauseSec * 1000);
+    } else {
+      setTimeout(() => { if (running && settings.mode === 'train') { newGameSetup(); scheduleNext(0); } }, Math.max(400, settings.delay));
+    }
   }
 
   function stepOnce() {
@@ -1811,6 +1937,7 @@ const LocalStore = (function () {
     const train = settings.mode === 'train';
     els.depthLiveWrap.hidden = !train;
     els.delayLiveWrap.hidden = !train;
+    els.postGameDelayLiveWrap.hidden = !train;
     els.pauseBtn.hidden = !train;
     els.stepBackBtn.hidden = !train;
     els.stepFwdBtn.hidden = !train;
@@ -1824,6 +1951,7 @@ const LocalStore = (function () {
     configureHeaderForMode();
     els.depthLive.value = String(settings.depth);
     els.delayLive.value = String(settings.delay);
+    els.postGameDelayLive.value = String(settings.postGameDelaySec);
     els.pauseBtn.textContent = 'Pausa';
     newGameSetup();
     scheduleNext(300);
@@ -1843,6 +1971,7 @@ const LocalStore = (function () {
     if (settings.mode === 'train') {
       els.depthLive.value = String(settings.depth);
       els.delayLive.value = String(settings.delay);
+      els.postGameDelayLive.value = String(settings.postGameDelaySec);
       els.pauseBtn.textContent = 'Pausa';
       renderBoard(game.state, game.lastMove, { instant: true });
       els.stepBackBtn.disabled = game.state.history.length === 0;
@@ -1879,6 +2008,7 @@ const LocalStore = (function () {
     if (settings.mode === 'train') {
       settings.depth = parseInt(els.depthSetup.value, 10);
       settings.delay = parseInt(els.delaySetup.value, 10);
+      settings.postGameDelaySec = Math.max(0, parseInt(els.postGameDelaySetup.value, 10) || 0);
       game = null;
       beginTrainRun();
     } else {
@@ -1892,6 +2022,10 @@ const LocalStore = (function () {
 
   els.depthLive.addEventListener('change', () => { settings.depth = parseInt(els.depthLive.value, 10); });
   els.delayLive.addEventListener('change', () => { settings.delay = Math.max(100, parseInt(els.delayLive.value, 10) || 600); });
+  els.postGameDelayApplyBtn.addEventListener('click', () => {
+    settings.postGameDelaySec = Math.max(0, parseInt(els.postGameDelayLive.value, 10) || 0);
+    els.postGameDelayLive.value = String(settings.postGameDelaySec);
+  });
 
   els.pauseBtn.addEventListener('click', () => {
     running = !running;
@@ -1919,6 +2053,7 @@ const LocalStore = (function () {
     els.depthSetup.value = String(settings.depth);
     els.delaySetup.value = String(settings.delay);
     els.delayVal.textContent = String(settings.delay);
+    els.postGameDelaySetup.value = String(settings.postGameDelaySec);
     els.resumeBtn.hidden = !game;
     updatePersistUI();
     els.setupPanel.hidden = false;

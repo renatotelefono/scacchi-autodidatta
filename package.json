@@ -1,0 +1,8 @@
+{
+  "name": "scacchi-autodidatta",
+  "private": true,
+  "description": "Motore di scacchi da zero con autoapprendimento evolutivo. Le funzioni in netlify/functions usano @netlify/blobs per il cervello condiviso.",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.0"
+  }
+}
