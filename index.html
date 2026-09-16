@@ -876,6 +876,7 @@ const EvalSearch = (function () {
     return total - present;
   }
 
+
   function evaluate(state, w, status) {
     if (status && status.over) {
       if (status.result === '1/2-1/2') return 0;
@@ -933,25 +934,80 @@ const EvalSearch = (function () {
     return best;
   }
 
-  function findBestMove(state, w, maxDepth, timeBudgetMs) {
+  function findBestMove(state, w, maxDepth, timeBudgetMs, posCounts) {
     const status = Chess.gameStatus(state);
     if (status.over || !status.legalMoves.length) return null;
     const sign = state.turn === 'w' ? 1 : -1;
     const deadline = Date.now() + Math.max(50, timeBudgetMs || 1200);
-    let bestMove = status.legalMoves[0];
+
+    // Nei finali con pochi pezzi il fattore di diramazione crolla, quindi il
+    // motore può (e deve) guardare molto più lontano: senza questo la ricerca
+    // resta bloccata alla profondità "da apertura" e non trova mai il matto
+    // con pochi pezzi sulla scacchiera, limitandosi a girare a vuoto.
+    const pieceCount = state.board.reduce((n, p) => n + (p ? 1 : 0), 0);
+    let maxDepthEff = maxDepth;
+    if (pieceCount <= 6) maxDepthEff = Math.max(maxDepth, 9);
+    else if (pieceCount <= 10) maxDepthEff = Math.max(maxDepth, 7);
+    else if (pieceCount <= 14) maxDepthEff = Math.max(maxDepth, 5);
+    // Un re rimasto solo (o quasi) va sempre cercato in profondità per trovare
+    // davvero la rete di matto, anche quando il lato forte ha ancora molti
+    // pezzi (il che allarga l'albero ma resta l'unico modo per non "girare
+    // a vuoto" dando scacchi senza concludere).
+    {
+      let wMinor = 0, bMinor = 0;
+      for (let s = 0; s < 64; s++) {
+        const p = state.board[s]; if (!p || p.toUpperCase() === 'K') continue;
+        if (p === p.toUpperCase()) wMinor++; else bMinor++;
+      }
+      if (wMinor === 0 || bMinor === 0) maxDepthEff = Math.max(maxDepthEff, 11);
+    }
+
+    // Scoraggia la ripetizione di posizioni già viste (causa principale delle
+    // partite "senza vincitore"): la penalità è un ammorbidimento del
+    // punteggio, non un divieto assoluto, così una vera necessità tattica
+    // (es. salvare un pezzo attaccato) prevale sempre sull'antipatia per la
+    // ripetizione — altrimenti, in finali con pochissimi pezzi, il motore può
+    // restare senza alternative "fresche" e finire per commettere un errore
+    // pur di non ripetere.
+    const candidateMoves = status.legalMoves;
+    let bestMove = candidateMoves[0];
     const nc = { n: 0 };
-    for (let depth = 1; depth <= maxDepth; depth++) {
-      let alpha = -Infinity, beta = Infinity, currentBest = null, currentBestScore = -Infinity;
-      const ordered = orderMoves(bestMove ? [bestMove, ...status.legalMoves.filter(m => m !== bestMove)] : status.legalMoves);
+    // La penalità anti-ripetizione non deve MAI poter far scegliere una mossa
+    // oggettivamente peggiore (es. che lascia un pezzo in presa): sceglie solo
+    // fra le mosse il cui punteggio "vero" (score) è entro questo margine dal
+    // migliore. Circa un pedone: molto più di quanto serva per rompere una
+    // parità fra mosse quiete, molto meno di qualunque perdita di materiale.
+    const REPETITION_SAFETY_MARGIN = 90;
+    for (let depth = 1; depth <= maxDepthEff; depth++) {
+      let alpha = -Infinity, beta = Infinity;
+      const evaluated = [];
+      const ordered = orderMoves(bestMove ? [bestMove, ...candidateMoves.filter(m => m !== bestMove)] : candidateMoves);
       for (const m of ordered) {
         const undo = Chess.doMove(state, m);
         const score = -negamax(state, depth - 1, -beta, -alpha, w, -sign, deadline, nc);
+        let adjusted = score;
+        if (posCounts) {
+          const key = Chess.positionKey(state);
+          const seen = posCounts.get(key) || 0;
+          if (seen === 1) adjusted -= 18;
+          else if (seen >= 2) adjusted -= 45;
+        }
         Chess.undoMove(state, undo);
-        if (score > currentBestScore) { currentBestScore = score; currentBest = m; }
+        adjusted += (Math.random() * 6 - 3);
+        evaluated.push({ m, score, adjusted });
         if (score > alpha) alpha = score;
         if (Date.now() > deadline) break;
       }
-      if (currentBest) bestMove = currentBest;
+      if (evaluated.length) {
+        // Punteggio "aggiustato": penalizza leggermente le posizioni già viste
+        // (per non tornarci senza un vero motivo tattico) e aggiunge una
+        // piccola variazione casuale così partite diverse non convergono
+        // sempre sulla stessa linea — ma solo fra mosse di valore comparabile.
+        const rawBest = Math.max(...evaluated.map(e => e.score));
+        const pool = evaluated.filter(e => e.score >= rawBest - REPETITION_SAFETY_MARGIN);
+        pool.sort((a, b) => b.adjusted - a.adjusted);
+        bestMove = pool[0].m;
+      }
       if (Date.now() > deadline) break;
     }
     return { move: bestMove, nodes: nc.n };
@@ -1502,7 +1558,7 @@ const LocalStore = (function () {
     const status = Chess.gameStatus(state, game.posCounts);
     if (status.over) { endCurrentGame(status); return; }
     const weights = game.weightsByColor[state.turn];
-    const found = EvalSearch.findBestMove(state, weights, settings.depth, SEARCH_TIME_BUDGET_MS);
+    const found = EvalSearch.findBestMove(state, weights, settings.depth, SEARCH_TIME_BUDGET_MS, game.posCounts);
     if (!found) { endCurrentGame({ result: '1/2-1/2', reason: 'nessuna mossa disponibile' }); return; }
     const move = found.move;
     const mover = state.turn;
@@ -1726,7 +1782,7 @@ const LocalStore = (function () {
     if (status.over) return;
     setTimeout(() => {
       if (settings.mode !== 'play' || !running || !game) return;
-      const found = EvalSearch.findBestMove(state, training.champion, settings.depth, SEARCH_TIME_BUDGET_MS);
+      const found = EvalSearch.findBestMove(state, training.champion, settings.depth, SEARCH_TIME_BUDGET_MS, game.posCounts);
       if (!found) return;
       applyMovePlay(found.move);
     }, 30);
