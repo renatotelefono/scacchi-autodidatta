@@ -1,0 +1,1915 @@
+<title>Scacchi Autodidatta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF1ED;
+    --surface: #FFFFFF;
+    --surface-2: #E3E8E0;
+    --ink: #1B2430;
+    --ink-soft: #55606E;
+    --line: #D7DCD1;
+    --brass: #A9782E;
+    --brass-soft: #EFE2C4;
+    --steel: #33607E;
+    --steel-soft: #DDE9EF;
+    --brick: #A8442E;
+    --brick-soft: #F3DFD8;
+    --good: #2F7A4E;
+    --good-soft: #DCEEE0;
+    --board-light: #EEF0DA;
+    --board-dark: #7C9D63;
+    --board-line: #4F6B3D;
+    --coord-on-light: #6C8354;
+    --coord-on-dark: #EEF0DA;
+    --piece-white: #F8F4E7;
+    --piece-black: #3A3630;
+    --piece-stroke: #241F18;
+    --dot-white: #F8F4E7;
+    --dot-black: #262524;
+    --hint: rgba(27,36,48,.34);
+    --focus: #A9782E;
+    --shadow: 0 1px 2px rgba(27,36,48,.06), 0 6px 18px rgba(27,36,48,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151B;
+      --surface: #1A222B;
+      --surface-2: #212B35;
+      --ink: #ECEFE9;
+      --ink-soft: #A6B1BC;
+      --line: #2B3542;
+      --brass: #D8AB5F;
+      --brass-soft: #3A3120;
+      --steel: #79B3D4;
+      --steel-soft: #1D3644;
+      --brick: #D77A5D;
+      --brick-soft: #3B241E;
+      --good: #6FC08A;
+      --good-soft: #1D3527;
+      --hint: rgba(236,239,233,.4);
+      --focus: #D8AB5F;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151B;
+    --surface: #1A222B;
+    --surface-2: #212B35;
+    --ink: #ECEFE9;
+    --ink-soft: #A6B1BC;
+    --line: #2B3542;
+    --brass: #D8AB5F;
+    --brass-soft: #3A3120;
+    --steel: #79B3D4;
+    --steel-soft: #1D3644;
+    --brick: #D77A5D;
+    --brick-soft: #3B241E;
+    --good: #6FC08A;
+    --good-soft: #1D3527;
+    --hint: rgba(236,239,233,.4);
+    --focus: #D8AB5F;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding-inline: 20px; padding-block: 20px; }
+  a { color: var(--steel); }
+  button, select, input { font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  h1.brand {
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem);
+    margin: 0;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .tagline { color: var(--ink-soft); font-size: .92rem; margin: 2px 0 0; max-width: 60ch; }
+
+  header.top {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+
+  /* ---- readout / annuncio mossa ---- */
+  .readout {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+  }
+  .readout .turn-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--surface-2); border-radius: 999px; padding: 5px 12px;
+    white-space: nowrap;
+  }
+  .turn-chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink); border: 1px solid var(--line); }
+  .turn-chip .dot.white { background: var(--dot-white); }
+  .turn-chip .dot.black { background: var(--dot-black); }
+  .status-pill {
+    font-family: 'IBM Plex Mono', monospace; font-size: .78rem; padding: 5px 12px; border-radius: 999px;
+    background: var(--good-soft); color: var(--good); white-space: nowrap;
+  }
+  .status-pill.check { background: var(--brick-soft); color: var(--brick); }
+
+  /* ---- controls ---- */
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    font-weight: 600; font-size: .88rem; border-radius: 10px; padding: 9px 16px; cursor: pointer;
+    box-shadow: var(--shadow); transition: transform .08s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn:disabled:hover { transform: none; }
+  .btn.primary { background: var(--brass); border-color: var(--brass); color: #241A08; }
+  .btn.ghost { background: transparent; box-shadow: none; }
+  .btn.small { padding: 6px 11px; font-size: .8rem; }
+  .btn.link { border: none; box-shadow: none; background: transparent; color: var(--brick); padding: 6px 4px; text-decoration: underline; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--ink-soft); }
+  .field label { font-weight: 600; }
+  .field select, .field input[type="number"] {
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface); color: var(--ink); font-size: .88rem;
+  }
+
+  /* ---- setup panel ---- */
+  .setup {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
+    padding: 28px clamp(18px, 4vw, 36px);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .setup h2 { font-family: 'Fraunces', serif; font-weight: 600; margin: 0; font-size: 1.3rem; }
+  .setup p.desc { color: var(--ink-soft); margin: 0; max-width: 62ch; line-height: 1.55; }
+  .setup .params { display: flex; gap: 22px; flex-wrap: wrap; }
+  .setup .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  input[type="range"] { accent-color: var(--brass); width: 160px; }
+
+  .persist-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    background: var(--surface-2); border-radius: 12px; padding: 12px 16px;
+  }
+  .persist-status { font-family: 'IBM Plex Mono', monospace; font-size: .78rem; color: var(--ink); line-height: 1.5; }
+  .persist-progress { font-family: 'IBM Plex Mono', monospace; font-size: .74rem; color: var(--ink-soft); margin-top: 2px; }
+  .persist-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .file-label { display: inline-flex; align-items: center; }
+
+  .mode-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; width: fit-content; }
+  .mode-opt { position: relative; }
+  .mode-opt input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+  .mode-opt span { display: block; padding: 10px 18px; font-size: .86rem; font-weight: 600; color: var(--ink-soft); background: var(--surface); cursor: pointer; white-space: nowrap; }
+  .mode-opt input:checked + span { background: var(--brass); color: #241A08; }
+  .mode-opt input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+  .color-switch { display: flex; gap: 16px; flex-wrap: wrap; }
+  .color-switch label { display: flex; align-items: center; gap: 6px; font-size: .88rem; font-weight: 500; color: var(--ink); cursor: pointer; }
+
+  /* ---- main grid ---- */
+  .stage { display: grid; grid-template-columns: minmax(200px,1fr) minmax(320px,460px) minmax(200px,1fr); gap: 16px; align-items: start; }
+  .col { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .col-center { order: -1; }
+  .col-head {
+    padding: 12px 16px 10px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .col-head h3 {
+    margin: 0; font-family: 'Fraunces', serif; font-weight: 600; font-size: 1rem;
+  }
+  .side-count { font-family: 'IBM Plex Mono', monospace; font-size: .74rem; color: var(--ink-soft); }
+  .col-head-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .side-wins { font-family: 'IBM Plex Mono', monospace; font-size: .72rem; color: var(--good); font-weight: 600; }
+
+  .captured-tray { display: flex; flex-wrap: wrap; gap: 3px; padding: 10px 16px 4px; min-height: 30px; }
+  .captured-tray .cap-piece { font-size: 1.35rem; line-height: 1; }
+  .captured-empty { color: var(--ink-soft); font-size: .78rem; font-family: 'IBM Plex Mono', monospace; padding: 0 2px; }
+
+  .move-log { list-style: none; margin: 0; padding: 4px 8px 12px; max-height: 380px; overflow-y: auto; font-family: 'IBM Plex Mono', monospace; }
+  .move-log li {
+    display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 8px; font-size: .83rem;
+  }
+  .move-log li:last-child { background: var(--surface-2); font-weight: 600; }
+  .move-log li .idx { color: var(--ink-soft); min-width: 1.6em; text-align: right; }
+  .move-log .empty-log { color: var(--ink-soft); font-style: italic; padding: 10px 8px; font-family: 'Karla', sans-serif; font-size: .85rem; }
+
+  /* ---- board ---- */
+  .board-wrap { padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .board {
+    position: relative;
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    width: min(100%, 440px); aspect-ratio: 1 / 1;
+    border: 3px solid var(--board-line); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow);
+  }
+  .sq { position: relative; cursor: default; min-width: 0; min-height: 0; }
+  .sq.light { background: var(--board-light); }
+  .sq.dark { background: var(--board-dark); }
+  .sq.from, .sq.to { box-shadow: inset 0 0 0 3px var(--brass); }
+  .sq.king-check { box-shadow: inset 0 0 0 3px var(--brick); }
+  .sq.selected { box-shadow: inset 0 0 0 3px var(--steel); }
+  .sq.legal-dot::after { content: ''; position: absolute; inset: 0; margin: auto; width: 24%; height: 24%; border-radius: 50%; background: var(--hint); pointer-events: none; }
+  .sq.legal-capture::after { content: ''; position: absolute; inset: 9%; border-radius: 50%; border: 3px solid var(--hint); pointer-events: none; }
+  .board.interactive .sq { cursor: pointer; }
+  .board.interactive .sq:hover { filter: brightness(1.07); }
+  .sq .coord {
+    position: absolute; font-family: 'IBM Plex Mono', monospace; font-weight: 600;
+    font-size: clamp(.56rem, 1.7vw, .72rem); line-height: 1; letter-spacing: 0; pointer-events: none; opacity: .82;
+  }
+  .sq .coord.rank { top: 3px; left: 4px; }
+  .sq .coord.file { bottom: 2px; right: 4px; }
+  .sq.light .coord { color: var(--coord-on-light); }
+  .sq.dark .coord { color: var(--coord-on-dark); }
+
+  .piece-layer { position: absolute; inset: 0; pointer-events: none; }
+  .piece-wrap {
+    position: absolute; width: 12.5%; height: 12.5%;
+    display: flex; align-items: center; justify-content: center;
+    transition: left .28s cubic-bezier(.4,.1,.2,1), top .28s cubic-bezier(.4,.1,.2,1), opacity .22s ease, transform .22s ease;
+  }
+  .piece-wrap.captured-out { opacity: 0; transform: scale(.35); }
+  .piece-icon {
+    width: 82%; height: 82%; display: block; user-select: none;
+    filter: drop-shadow(0 2px 2px rgba(20, 24, 16, .32));
+  }
+  .piece-icon.white { fill: var(--piece-white); stroke: var(--piece-stroke); stroke-width: 3.2; }
+  .piece-icon.black { fill: var(--piece-black); stroke: var(--piece-stroke); stroke-width: 3.2; }
+  .piece-icon path, .piece-icon rect, .piece-icon circle, .piece-icon ellipse, .piece-icon line, .piece-icon polygon {
+    stroke-linejoin: round; stroke-linecap: round;
+  }
+  .piece-icon .pc-shine { fill: #ffffff !important; stroke: none !important; opacity: .28; }
+  .piece-icon .pc-ring { fill: none !important; }
+  .cap-piece .piece-icon { width: 22px; height: 22px; filter: none; }
+  .cap-piece { display: inline-flex; }
+
+  .board-caption { font-family: 'IBM Plex Mono', monospace; font-size: .76rem; color: var(--ink-soft); text-align: center; }
+
+  /* ---- pannello laterale (addestramento / partita) ---- */
+  .lab { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .lab-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .lab-head h2 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.15rem; margin: 0; }
+  .lab-head .sub { color: var(--ink-soft); font-size: .82rem; font-family: 'IBM Plex Mono', monospace; }
+  .lab-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .stat-tile { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .stat-tile .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .stat-tile .value { font-family: 'IBM Plex Mono', monospace; font-size: 1.25rem; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .lab-cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; }
+  .weights-table { width: 100%; border-collapse: collapse; font-family: 'IBM Plex Mono', monospace; font-size: .82rem; }
+  .weights-table th, .weights-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  .weights-table th { color: var(--ink-soft); font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+  .weights-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 64px; overflow-x: auto; padding-bottom: 2px; }
+  .spark .bar { flex: 0 0 8px; border-radius: 3px 3px 0 0; background: var(--surface-2); }
+  .spark .bar.promoted { background: var(--good); }
+  .spark-label { font-size: .74rem; color: var(--ink-soft); }
+
+  /* ---- modale promozione ---- */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(16,21,27,.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal-card { background: var(--surface); border-radius: 16px; padding: 22px 24px; box-shadow: var(--shadow); max-width: 320px; width: 100%; text-align: center; }
+  .modal-card h3 { margin: 0 0 14px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.05rem; }
+  .promo-options { display: flex; gap: 10px; justify-content: center; }
+  .promo-btn {
+    border: 1px solid var(--line); background: var(--surface-2); border-radius: 12px; width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink); padding: 0;
+  }
+  .promo-btn:hover { border-color: var(--brass); }
+  .promo-btn .piece-icon { width: 36px; height: 36px; filter: none; }
+
+  footer.note { color: var(--ink-soft); font-size: .78rem; line-height: 1.6; max-width: 80ch; }
+
+  @media (max-width: 880px) {
+    .stage { grid-template-columns: 1fr; }
+    .col-center { order: -1; }
+    .lab-cols { grid-template-columns: 1fr; }
+    .board { width: min(100%, 420px); }
+    .persist-bar { flex-direction: column; align-items: stretch; }
+  }
+</style>
+
+<svg class="piece-defs" style="position:absolute; width:0; height:0; overflow:hidden" aria-hidden="true">
+  <symbol id="pc-P" viewBox="0 0 100 100"><rect x="27" y="83" width="46" height="10" rx="5"/><path d="M36,83 C34,74 38,68 44,66 C40,62 38,57 40,51 C33,48 29,41 32,33 C34,27 41,23 50,23 C59,23 66,27 68,33 C71,41 67,48 60,51 C62,57 60,62 56,66 C62,68 66,74 64,83 Z"/><ellipse class="pc-shine" cx="41" cy="36" rx="6" ry="9"/></symbol>
+  <symbol id="pc-R" viewBox="0 0 100 100"><rect x="24" y="83" width="52" height="10" rx="5"/><path d="M32,83 C30,70 31,58 36,48 L64,48 C69,58 70,70 68,83 Z"/><rect x="30" y="40" width="40" height="9" rx="2"/><rect x="32" y="23" width="11" height="18" rx="2.5"/><rect x="44.5" y="23" width="11" height="18" rx="2.5"/><rect x="57" y="23" width="11" height="18" rx="2.5"/><ellipse class="pc-shine" cx="40" cy="60" rx="6" ry="16"/></symbol>
+  <symbol id="pc-B" viewBox="0 0 100 100"><rect x="28" y="83" width="44" height="10" rx="5"/><rect x="36" y="73" width="28" height="11" rx="5"/><path d="M50,22 C40,28 33,41 35,56 C36,64 40,70 45,74 L55,74 C60,70 64,64 65,56 C67,41 60,28 50,22 Z"/><path class="pc-ring" d="M38,45 Q50,34 62,43" stroke-width="5.5"/><circle cx="50" cy="13" r="8"/><ellipse class="pc-shine" cx="43" cy="50" rx="5" ry="14"/></symbol>
+  <symbol id="pc-N" viewBox="0 0 100 100"><rect x="24" y="83" width="52" height="10" rx="5"/><path d="M70,83 L40,83 L36,48 L60,44 Z"/><ellipse cx="37" cy="38" rx="18" ry="16"/><ellipse cx="19" cy="43" rx="10" ry="7.5"/><polygon points="45,25 38,8 31,26"/><circle class="pc-ring" cx="33" cy="37" r="2.8" stroke-width="2.4"/><ellipse class="pc-shine" cx="58" cy="46" rx="5" ry="12"/></symbol>
+  <symbol id="pc-Q" viewBox="0 0 100 100"><rect x="26" y="83" width="48" height="10" rx="5"/><path d="M35,74 C32,62 34,49 40,40 L60,40 C66,49 68,62 65,74 Z"/><path d="M39,40 L33,20 L43,31 L47,15 L50,13 L53,15 L57,31 L67,20 L61,40 Z"/><circle cx="33" cy="18" r="5"/><circle cx="50" cy="12" r="5.4"/><circle cx="67" cy="18" r="5"/><circle cx="41" cy="25" r="3.6"/><circle cx="59" cy="25" r="3.6"/><ellipse class="pc-shine" cx="42" cy="54" rx="5" ry="16"/></symbol>
+  <symbol id="pc-K" viewBox="0 0 100 100"><rect x="26" y="83" width="48" height="10" rx="5"/><path d="M35,74 C32,62 34,49 40,40 L60,40 C66,49 68,62 65,74 Z"/><rect x="31" y="58" width="38" height="8" rx="4"/><path d="M37,40 L35,29 L65,29 L63,40 Z"/><rect x="45" y="7" width="10" height="25" rx="2.5"/><rect x="34" y="16" width="32" height="9" rx="2.5"/><ellipse class="pc-shine" cx="42" cy="54" rx="5" ry="16"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 class="brand">Scacchi Autodidatta</h1>
+      <p class="tagline">Un motore scritto da zero che impara giocando contro se stesso — e con cui puoi giocare tu stesso, scegliendo il colore.</p>
+    </div>
+    <div class="controls" id="headerControls" hidden>
+      <div class="field" id="depthLiveWrap">
+        <label for="depthLive">Profondità</label>
+        <select id="depthLive"></select>
+      </div>
+      <div class="field" id="delayLiveWrap">
+        <label for="delayLive">Ritardo (ms)</label>
+        <input id="delayLive" type="number" min="100" max="4000" step="50" style="width:80px">
+      </div>
+      <button class="btn small" id="stepBackBtn" type="button" title="Mostra la mossa precedente">◀ Indietro</button>
+      <button class="btn small" id="stepFwdBtn" type="button" title="Mostra la mossa successiva" disabled>Avanti ▶</button>
+      <button class="btn primary small" id="pauseBtn" type="button">Pausa</button>
+      <button class="btn primary small" id="newGameBtn" type="button" hidden>Nuova partita</button>
+      <button class="btn ghost small" id="setupBtn" type="button">Impostazioni</button>
+    </div>
+  </header>
+
+  <section class="setup" id="setupPanel">
+    <h2>Prima di iniziare</h2>
+    <p class="desc">Scegli se il motore deve allenarsi da solo, oppure se vuoi giocare tu contro di lui. In entrambi i casi usa i pesi più aggiornati: quelli accumulati partita dopo partita, verificati all'avvio rispetto al salvataggio più recente disponibile.</p>
+
+    <div class="persist-bar" id="persistBar">
+      <div>
+        <div class="persist-status" id="persistStatus">Verifica del salvataggio locale…</div>
+        <div class="persist-progress" id="persistProgress"></div>
+      </div>
+      <div class="persist-actions">
+        <button class="btn small" id="connectFileBtn" type="button" hidden>Collega file locale…</button>
+        <button class="btn small" id="reconnectFileBtn" type="button" hidden>Ricollega file</button>
+        <button class="btn small ghost" id="exportBtn" type="button">Esporta</button>
+        <label class="btn small ghost file-label" for="importInput">Importa</label>
+        <input type="file" id="importInput" accept="application/json" hidden>
+        <button class="btn link" id="resetBtn" type="button">Ricomincia da zero</button>
+      </div>
+    </div>
+
+    <div class="mode-switch" role="radiogroup" aria-label="Modalità">
+      <label class="mode-opt"><input type="radio" name="mode" value="train" checked><span>Addestramento automatico</span></label>
+      <label class="mode-opt"><input type="radio" name="mode" value="play"><span>Gioca tu contro il motore</span></label>
+    </div>
+
+    <div class="params" id="trainParams">
+      <div class="field">
+        <label for="depthSetup">Profondità di ricerca (semi-mosse)</label>
+        <select id="depthSetup">
+          <option value="2">2 — molto veloce</option>
+          <option value="3" selected>3 — consigliata</option>
+          <option value="4">4 — più forte, più lenta</option>
+          <option value="5">5 — lenta</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="delaySetup">Ritardo tra le mosse: <span id="delayVal">600</span> ms</label>
+        <input id="delaySetup" type="range" min="100" max="2500" step="50" value="600">
+      </div>
+    </div>
+
+    <div class="params" id="playParams" hidden>
+      <div class="field">
+        <label>Il tuo colore</label>
+        <div class="color-switch">
+          <label><input type="radio" name="humanColor" value="w" checked> Bianco</label>
+          <label><input type="radio" name="humanColor" value="b"> Nero</label>
+          <label><input type="radio" name="humanColor" value="random"> Casuale</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="depthPlay">Forza del motore</label>
+        <select id="depthPlay">
+          <option value="2">2 — debole</option>
+          <option value="3" selected>3 — media</option>
+          <option value="4">4 — forte</option>
+          <option value="5">5 — molto forte</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="startBtn" type="button">Avvia addestramento</button>
+      <button class="btn" id="resumeBtn" type="button" hidden>Riprendi sessione in corso</button>
+    </div>
+  </section>
+
+  <main class="stage" id="stage" hidden>
+    <section class="col" id="colWhite" aria-label="Mosse del Bianco">
+      <div class="col-head">
+        <h3>Bianco</h3>
+        <div class="col-head-stats">
+          <span class="side-count" id="countWhite">0 mosse</span>
+          <span class="side-wins" id="winsWhite">0 vittorie</span>
+        </div>
+      </div>
+      <div class="captured-tray" id="capByWhite"><span class="captured-empty">Nessuna cattura</span></div>
+      <ol class="move-log" id="logWhite"><li class="empty-log">La partita inizierà a breve…</li></ol>
+    </section>
+
+    <section class="col col-center" aria-label="Scacchiera">
+      <div class="readout">
+        <span class="turn-chip" id="turnChip"><span class="dot white" id="turnDot"></span><span id="turnLabel">Bianco al tratto</span></span>
+        <span class="status-pill" id="statusPill" hidden></span>
+      </div>
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+        <p class="board-caption" id="boardCaption">Generazione 1 · partita 1</p>
+      </div>
+    </section>
+
+    <section class="col" id="colBlack" aria-label="Mosse del Nero">
+      <div class="col-head">
+        <h3>Nero</h3>
+        <div class="col-head-stats">
+          <span class="side-count" id="countBlack">0 mosse</span>
+          <span class="side-wins" id="winsBlack">0 vittorie</span>
+        </div>
+      </div>
+      <div class="captured-tray" id="capByBlack"><span class="captured-empty">Nessuna cattura</span></div>
+      <ol class="move-log" id="logBlack"><li class="empty-log">La partita inizierà a breve…</li></ol>
+    </section>
+  </main>
+
+  <section class="lab" id="lab" hidden>
+    <div id="labTrain">
+      <div class="lab-head">
+        <h2>Laboratorio di apprendimento</h2>
+        <span class="sub" id="persistNote">—</span>
+      </div>
+      <div class="lab-stats">
+        <div class="stat-tile"><div class="label">Generazione</div><div class="value" id="statGen">1</div></div>
+        <div class="stat-tile"><div class="label">Promozioni</div><div class="value" id="statProm">0</div></div>
+        <div class="stat-tile"><div class="label">Partite totali</div><div class="value" id="statGames">0</div></div>
+        <div class="stat-tile"><div class="label">Punteggio match in corso</div><div class="value" id="statMatch">0 – 0</div></div>
+      </div>
+      <div class="lab-cols">
+        <div>
+          <table class="weights-table" id="weightsTable">
+            <thead><tr><th>Parametro</th><th>Valore campione</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div>
+          <div class="spark-label">Ultime generazioni (verde = sfidante promossa)</div>
+          <div class="spark" id="sparkline"></div>
+        </div>
+      </div>
+    </div>
+    <div id="labPlay" hidden>
+      <div class="lab-head">
+        <h2>Partita amichevole</h2>
+      </div>
+      <div class="lab-stats">
+        <div class="stat-tile"><div class="label">Partite contro di te</div><div class="value" id="hsGames">0</div></div>
+        <div class="stat-tile"><div class="label">Tue vittorie</div><div class="value" id="hsWins">0</div></div>
+        <div class="stat-tile"><div class="label">Pareggi</div><div class="value" id="hsDraws">0</div></div>
+        <div class="stat-tile"><div class="label">Vittorie del motore</div><div class="value" id="hsLosses">0</div></div>
+      </div>
+      <p class="tagline">Il motore gioca con i pesi della generazione <strong id="hsChampGen">1</strong>, il risultato di tutte le partite di addestramento fatte finora — le partite amichevoli non modificano questi pesi.</p>
+    </div>
+  </section>
+
+  <footer class="note">
+    Motore, generazione delle mosse e ricerca scritti interamente per questo progetto (nessuna libreria esterna). La valutazione posizionale combina materiale, tabelle di piazzamento, mobilità, sicurezza del re e struttura pedonale; l'apprendimento avviene per selezione evolutiva dei pesi tramite partite campione-contro-sfidante, non tramite rete neurale. I progressi si salvano automaticamente nel browser e, se colleghi un file, anche lì; all'avvio viene sempre usata la versione più avanzata trovata.
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="promoModal" hidden>
+  <div class="modal-card">
+    <h3>Promuovi il pedone a…</h3>
+    <div class="promo-options" id="promoOptions"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =====================================================================
+   MOTORE SCACCHISTICO — scritto da zero (regole complete, testato con
+   perft su posizione iniziale e posizione "Kiwipete": arrocco, en
+   passant, promozione, scacco/matto/stallo tutti validati).
+   ===================================================================== */
+const Chess = (function () {
+  const FILES = 'abcdefgh';
+  function fileOf(s) { return s % 8; }
+  function rankOf(s) { return (s / 8) | 0; }
+  function sqOf(f, r) { return r * 8 + f; }
+  function toAlg(s) { return FILES[fileOf(s)] + (rankOf(s) + 1); }
+  function isWhitePiece(p) { return p && p === p.toUpperCase(); }
+  function colorOf(p) { return p ? (isWhitePiece(p) ? 'w' : 'b') : null; }
+
+  const PIECE_NAMES_IT = { P: 'Pedone', N: 'Cavallo', B: 'Alfiere', R: 'Torre', Q: 'Donna', K: 'Re' };
+
+  function initialBoard() {
+    const b = new Array(64).fill(null);
+    const back = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
+    for (let f = 0; f < 8; f++) {
+      b[sqOf(f, 0)] = back[f];
+      b[sqOf(f, 1)] = 'P';
+      b[sqOf(f, 6)] = 'p';
+      b[sqOf(f, 7)] = back[f].toLowerCase();
+    }
+    return b;
+  }
+
+  function newGame() {
+    return { board: initialBoard(), turn: 'w', castle: { K: true, Q: true, k: true, q: true }, ep: null, halfmove: 0, fullmove: 1, history: [] };
+  }
+
+  const KNIGHT_DELTAS = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
+  const KING_DELTAS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+  const BISHOP_DIRS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+  const ROOK_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const QUEEN_DIRS = BISHOP_DIRS.concat(ROOK_DIRS);
+
+  function isSquareAttacked(board, square, byColor) {
+    const f0 = fileOf(square), r0 = rankOf(square);
+    const pawnRankDelta = byColor === 'w' ? -1 : 1;
+    const pr = r0 + pawnRankDelta;
+    if (pr >= 0 && pr < 8) {
+      for (const df of [-1, 1]) {
+        const pf = f0 + df;
+        if (pf >= 0 && pf < 8) {
+          const p = board[sqOf(pf, pr)];
+          if (p && colorOf(p) === byColor && p.toUpperCase() === 'P') return true;
+        }
+      }
+    }
+    for (const [df, dr] of KNIGHT_DELTAS) {
+      const f = f0 + df, r = r0 + dr;
+      if (f >= 0 && f < 8 && r >= 0 && r < 8) {
+        const p = board[sqOf(f, r)];
+        if (p && colorOf(p) === byColor && p.toUpperCase() === 'N') return true;
+      }
+    }
+    for (const [df, dr] of KING_DELTAS) {
+      const f = f0 + df, r = r0 + dr;
+      if (f >= 0 && f < 8 && r >= 0 && r < 8) {
+        const p = board[sqOf(f, r)];
+        if (p && colorOf(p) === byColor && p.toUpperCase() === 'K') return true;
+      }
+    }
+    for (const [df, dr] of BISHOP_DIRS) {
+      let f = f0 + df, r = r0 + dr;
+      while (f >= 0 && f < 8 && r >= 0 && r < 8) {
+        const p = board[sqOf(f, r)];
+        if (p) { if (colorOf(p) === byColor && (p.toUpperCase() === 'B' || p.toUpperCase() === 'Q')) return true; break; }
+        f += df; r += dr;
+      }
+    }
+    for (const [df, dr] of ROOK_DIRS) {
+      let f = f0 + df, r = r0 + dr;
+      while (f >= 0 && f < 8 && r >= 0 && r < 8) {
+        const p = board[sqOf(f, r)];
+        if (p) { if (colorOf(p) === byColor && (p.toUpperCase() === 'R' || p.toUpperCase() === 'Q')) return true; break; }
+        f += df; r += dr;
+      }
+    }
+    return false;
+  }
+
+  function findKing(board, color) {
+    const k = color === 'w' ? 'K' : 'k';
+    for (let s = 0; s < 64; s++) if (board[s] === k) return s;
+    return -1;
+  }
+  function inCheck(state, color) {
+    const kingSq = findKing(state.board, color);
+    if (kingSq < 0) return false;
+    return isSquareAttacked(state.board, kingSq, color === 'w' ? 'b' : 'w');
+  }
+
+  function genPseudoMoves(state) {
+    const board = state.board, color = state.turn, opp = color === 'w' ? 'b' : 'w';
+    const moves = [];
+    for (let s = 0; s < 64; s++) {
+      const p = board[s];
+      if (!p || colorOf(p) !== color) continue;
+      const type = p.toUpperCase();
+      const f0 = fileOf(s), r0 = rankOf(s);
+
+      if (type === 'P') {
+        const dir = color === 'w' ? 1 : -1;
+        const startRank = color === 'w' ? 1 : 6;
+        const promoRank = color === 'w' ? 7 : 0;
+        const oneR = r0 + dir;
+        if (oneR >= 0 && oneR < 8 && !board[sqOf(f0, oneR)]) {
+          addPawnMove(moves, s, sqOf(f0, oneR), p, null, promoRank === oneR);
+          const twoR = r0 + 2 * dir;
+          if (r0 === startRank && !board[sqOf(f0, twoR)]) {
+            moves.push({ from: s, to: sqOf(f0, twoR), piece: p, captured: null, promotion: null, ep: false, castle: null, isDouble: true });
+          }
+        }
+        for (const df of [-1, 1]) {
+          const f = f0 + df;
+          if (f < 0 || f >= 8) continue;
+          const r = r0 + dir;
+          if (r < 0 || r >= 8) continue;
+          const to = sqOf(f, r);
+          const target = board[to];
+          if (target && colorOf(target) === opp) addPawnMove(moves, s, to, p, target, promoRank === r);
+          else if (!target && state.ep === to) moves.push({ from: s, to, piece: p, captured: board[sqOf(f, r0)], promotion: null, ep: true, castle: null, isDouble: false });
+        }
+      } else if (type === 'N' || type === 'K') {
+        const deltas = type === 'N' ? KNIGHT_DELTAS : KING_DELTAS;
+        for (const [df, dr] of deltas) {
+          const f = f0 + df, r = r0 + dr;
+          if (f < 0 || f >= 8 || r < 0 || r >= 8) continue;
+          const to = sqOf(f, r);
+          const target = board[to];
+          if (!target || colorOf(target) === opp) moves.push({ from: s, to, piece: p, captured: target, promotion: null, ep: false, castle: null, isDouble: false });
+        }
+        if (type === 'K') genCastling(state, moves, color);
+      } else {
+        const dirs = type === 'B' ? BISHOP_DIRS : type === 'R' ? ROOK_DIRS : QUEEN_DIRS;
+        for (const [df, dr] of dirs) {
+          let f = f0 + df, r = r0 + dr;
+          while (f >= 0 && f < 8 && r >= 0 && r < 8) {
+            const to = sqOf(f, r);
+            const target = board[to];
+            if (!target) moves.push({ from: s, to, piece: p, captured: null, promotion: null, ep: false, castle: null, isDouble: false });
+            else { if (colorOf(target) === opp) moves.push({ from: s, to, piece: p, captured: target, promotion: null, ep: false, castle: null, isDouble: false }); break; }
+            f += df; r += dr;
+          }
+        }
+      }
+    }
+    return moves;
+  }
+
+  function addPawnMove(moves, from, to, piece, captured, isPromo) {
+    if (isPromo) for (const promo of ['Q', 'R', 'B', 'N']) moves.push({ from, to, piece, captured, promotion: promo, ep: false, castle: null, isDouble: false });
+    else moves.push({ from, to, piece, captured, promotion: null, ep: false, castle: null, isDouble: false });
+  }
+
+  function genCastling(state, moves, color) {
+    const board = state.board, opp = color === 'w' ? 'b' : 'w';
+    if (color === 'w') {
+      if (state.castle.K && !board[5] && !board[6] && board[4] === 'K' && board[7] === 'R' &&
+        !isSquareAttacked(board, 4, opp) && !isSquareAttacked(board, 5, opp) && !isSquareAttacked(board, 6, opp))
+        moves.push({ from: 4, to: 6, piece: 'K', captured: null, promotion: null, ep: false, castle: 'K', isDouble: false });
+      if (state.castle.Q && !board[3] && !board[2] && !board[1] && board[4] === 'K' && board[0] === 'R' &&
+        !isSquareAttacked(board, 4, opp) && !isSquareAttacked(board, 3, opp) && !isSquareAttacked(board, 2, opp))
+        moves.push({ from: 4, to: 2, piece: 'K', captured: null, promotion: null, ep: false, castle: 'Q', isDouble: false });
+    } else {
+      if (state.castle.k && !board[61] && !board[62] && board[60] === 'k' && board[63] === 'r' &&
+        !isSquareAttacked(board, 60, opp) && !isSquareAttacked(board, 61, opp) && !isSquareAttacked(board, 62, opp))
+        moves.push({ from: 60, to: 62, piece: 'k', captured: null, promotion: null, ep: false, castle: 'K', isDouble: false });
+      if (state.castle.q && !board[59] && !board[58] && !board[57] && board[60] === 'k' && board[56] === 'r' &&
+        !isSquareAttacked(board, 60, opp) && !isSquareAttacked(board, 59, opp) && !isSquareAttacked(board, 58, opp))
+        moves.push({ from: 60, to: 58, piece: 'k', captured: null, promotion: null, ep: false, castle: 'Q', isDouble: false });
+    }
+  }
+
+  function doMove(state, move) {
+    const board = state.board;
+    const undo = { move, castle: Object.assign({}, state.castle), ep: state.ep, halfmove: state.halfmove, capturedSquare: null };
+    const piece = move.piece, color = colorOf(piece);
+    board[move.from] = null;
+    if (move.ep) { const capSq = sqOf(fileOf(move.to), rankOf(move.from)); undo.capturedSquare = capSq; board[capSq] = null; }
+    else if (move.captured) undo.capturedSquare = move.to;
+    board[move.to] = move.promotion ? (color === 'w' ? move.promotion : move.promotion.toLowerCase()) : piece;
+    if (move.castle === 'K') { if (color === 'w') { board[7] = null; board[5] = 'R'; } else { board[63] = null; board[61] = 'r'; } }
+    else if (move.castle === 'Q') { if (color === 'w') { board[0] = null; board[3] = 'R'; } else { board[56] = null; board[59] = 'r'; } }
+    if (piece === 'K') { state.castle.K = false; state.castle.Q = false; }
+    if (piece === 'k') { state.castle.k = false; state.castle.q = false; }
+    if (move.from === 0 || move.to === 0) state.castle.Q = false;
+    if (move.from === 7 || move.to === 7) state.castle.K = false;
+    if (move.from === 56 || move.to === 56) state.castle.q = false;
+    if (move.from === 63 || move.to === 63) state.castle.k = false;
+    state.ep = move.isDouble ? sqOf(fileOf(move.from), (rankOf(move.from) + rankOf(move.to)) / 2) : null;
+    if (piece.toUpperCase() === 'P' || move.captured) state.halfmove = 0; else state.halfmove++;
+    if (color === 'b') state.fullmove++;
+    state.turn = color === 'w' ? 'b' : 'w';
+    state.history.push(move);
+    return undo;
+  }
+
+  function undoMove(state, undo) {
+    const board = state.board, move = undo.move, color = colorOf(move.piece);
+    state.turn = color; state.castle = undo.castle; state.ep = undo.ep; state.halfmove = undo.halfmove;
+    if (color === 'b') state.fullmove--;
+    state.history.pop();
+    board[move.to] = null;
+    board[move.from] = move.piece;
+    if (move.castle === 'K') { if (color === 'w') { board[5] = null; board[7] = 'R'; } else { board[61] = null; board[63] = 'r'; } }
+    else if (move.castle === 'Q') { if (color === 'w') { board[3] = null; board[0] = 'R'; } else { board[59] = null; board[56] = 'r'; } }
+    if (move.ep) board[undo.capturedSquare] = color === 'w' ? 'p' : 'P';
+    else if (move.captured) board[undo.capturedSquare] = move.captured;
+  }
+
+  function genLegalMoves(state) {
+    const pseudo = genPseudoMoves(state);
+    const legal = [];
+    const color = state.turn;
+    for (const m of pseudo) {
+      const undo = doMove(state, m);
+      if (!inCheck(state, color)) legal.push(m);
+      undoMove(state, undo);
+    }
+    return legal;
+  }
+
+  function countMaterial(board) {
+    const counts = {};
+    const bw = [], bb = [];
+    for (let s = 0; s < 64; s++) {
+      const p = board[s];
+      if (!p) continue;
+      counts[p] = (counts[p] || 0) + 1;
+      if (p === 'B') bw.push((fileOf(s) + rankOf(s)) % 2);
+      if (p === 'b') bb.push((fileOf(s) + rankOf(s)) % 2);
+    }
+    return { counts, bw, bb };
+  }
+  function insufficientMaterial(board) {
+    const { counts, bw, bb } = countMaterial(board);
+    if (counts.P || counts.p || counts.R || counts.r || counts.Q || counts.q) return false;
+    const wm = (counts.N || 0) + (counts.B || 0), bm = (counts.n || 0) + (counts.b || 0);
+    if (wm === 0 && bm === 0) return true;
+    if (wm === 1 && bm === 0) return true;
+    if (wm === 0 && bm === 1) return true;
+    if (wm === 1 && bm === 1 && !counts.N && !counts.n && bw[0] === bb[0]) return true;
+    return false;
+  }
+
+  function positionKey(state) {
+    return state.board.map(p => p || '.').join('') + state.turn +
+      (state.castle.K ? 'K' : '') + (state.castle.Q ? 'Q' : '') + (state.castle.k ? 'k' : '') + (state.castle.q ? 'q' : '') +
+      (state.ep !== null ? state.ep : '-');
+  }
+
+  function gameStatus(state, positionCounts) {
+    const legal = genLegalMoves(state);
+    const check = inCheck(state, state.turn);
+    if (legal.length === 0) {
+      if (check) return { over: true, result: state.turn === 'w' ? '0-1' : '1-0', reason: 'scaccomatto', check: true };
+      return { over: true, result: '1/2-1/2', reason: 'stallo', check: false };
+    }
+    if (state.halfmove >= 100) return { over: true, result: '1/2-1/2', reason: 'regola delle 50 mosse', check };
+    if (insufficientMaterial(state.board)) return { over: true, result: '1/2-1/2', reason: 'materiale insufficiente', check };
+    if (positionCounts) {
+      const key = positionKey(state);
+      if ((positionCounts.get(key) || 0) >= 3) return { over: true, result: '1/2-1/2', reason: 'tripla ripetizione', check };
+    }
+    return { over: false, check, legalMoves: legal };
+  }
+
+  function describeMove(move) {
+    if (move.castle === 'K') return 'Arrocco corto';
+    if (move.castle === 'Q') return 'Arrocco lungo';
+    const name = PIECE_NAMES_IT[move.piece.toUpperCase()];
+    const from = toAlg(move.from), to = toAlg(move.to);
+    const capTxt = (move.captured || move.ep) ? ' x ' : ':';
+    let txt = `${name} ${from}${capTxt}${to}`;
+    if (move.promotion) txt += `=${PIECE_NAMES_IT[move.promotion]}`;
+    return txt;
+  }
+
+  return {
+    newGame, genLegalMoves, doMove, undoMove, inCheck, gameStatus, describeMove,
+    toAlg, positionKey, colorOf, fileOf, rankOf, sqOf, PIECE_NAMES_IT, findKing
+  };
+})();
+
+/* =====================================================================
+   VALUTAZIONE PARAMETRICA + RICERCA ALPHA-BETA (con quiescence)
+   ===================================================================== */
+const EvalSearch = (function () {
+  const DEFAULT_WEIGHTS = { N: 320, B: 330, R: 500, Q: 900, pst: 1.0, mobility: 4, kingSafety: 12, pawnStructure: 14 };
+
+  function buildPST(rowsTop8) {
+    const t = new Array(64).fill(0);
+    for (let i = 0; i < 8; i++) { const rank = 7 - i; for (let file = 0; file < 8; file++) t[Chess.sqOf(file, rank)] = rowsTop8[i][file]; }
+    return t;
+  }
+  function mirror(t) { const m = new Array(64).fill(0); for (let f = 0; f < 8; f++) for (let r = 0; r < 8; r++) m[Chess.sqOf(f, r)] = t[Chess.sqOf(f, 7 - r)]; return m; }
+
+  const PST_W = {
+    P: buildPST([[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]]),
+    N: buildPST([[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]]),
+    B: buildPST([[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]]),
+    R: buildPST([[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]]),
+    Q: buildPST([[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]]),
+    K: buildPST([[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]])
+  };
+  const PST_B = {}; for (const k in PST_W) PST_B[k] = mirror(PST_W[k]);
+
+  function pieceValue(type, w) { return type === 'P' ? 100 : w[type]; }
+
+  function materialAndPst(state, w) {
+    let material = 0, pst = 0;
+    const board = state.board;
+    for (let s = 0; s < 64; s++) {
+      const p = board[s]; if (!p) continue;
+      const type = p.toUpperCase(); const val = pieceValue(type, w);
+      const white = Chess.colorOf(p) === 'w';
+      material += white ? val : -val;
+      const table = white ? PST_W[type] : PST_B[type];
+      pst += white ? table[s] : -table[s];
+    }
+    return { material, pst: pst * w.pst };
+  }
+
+  function countLegalMoves(state, color) {
+    const saved = state.turn; state.turn = color;
+    const n = Chess.genLegalMoves(state).length;
+    state.turn = saved;
+    return n;
+  }
+
+  function pawnStructureScore(state) {
+    const board = state.board;
+    const fw = new Array(8).fill(0), fb = new Array(8).fill(0);
+    const wp = [], bp = [];
+    for (let s = 0; s < 64; s++) {
+      const p = board[s];
+      if (p === 'P') { fw[Chess.fileOf(s)]++; wp.push(s); }
+      else if (p === 'p') { fb[Chess.fileOf(s)]++; bp.push(s); }
+    }
+    let score = 0;
+    for (let f = 0; f < 8; f++) {
+      if (fw[f] > 1) score -= (fw[f] - 1);
+      if (fb[f] > 1) score += (fb[f] - 1);
+    }
+    for (let f = 0; f < 8; f++) {
+      if (fw[f] > 0 && !((f > 0 && fw[f - 1] > 0) || (f < 7 && fw[f + 1] > 0))) score -= fw[f];
+      if (fb[f] > 0 && !((f > 0 && fb[f - 1] > 0) || (f < 7 && fb[f + 1] > 0))) score += fb[f];
+    }
+    for (const s of wp) {
+      const f = Chess.fileOf(s), r = Chess.rankOf(s);
+      let passed = true;
+      outer: for (const bf of [f - 1, f, f + 1]) { if (bf < 0 || bf > 7) continue; for (const bs of bp) if (Chess.fileOf(bs) === bf && Chess.rankOf(bs) > r) { passed = false; break outer; } }
+      if (passed) score += 0.5 + r * 0.3;
+    }
+    for (const s of bp) {
+      const f = Chess.fileOf(s), r = Chess.rankOf(s);
+      let passed = true;
+      outer2: for (const wf of [f - 1, f, f + 1]) { if (wf < 0 || wf > 7) continue; for (const ws of wp) if (Chess.fileOf(ws) === wf && Chess.rankOf(ws) < r) { passed = false; break outer2; } }
+      if (passed) score -= 0.5 + (7 - r) * 0.3;
+    }
+    return score;
+  }
+
+  function kingShieldPenalty(state, color) {
+    const board = state.board;
+    const kingSq = Chess.findKing(board, color);
+    if (kingSq < 0) return 0;
+    const f = Chess.fileOf(kingSq), r = Chess.rankOf(kingSq);
+    const homeRank = color === 'w' ? 0 : 7;
+    if (Math.abs(r - homeRank) > 1) return 0;
+    const shieldRank = color === 'w' ? r + 1 : r - 1;
+    if (shieldRank < 0 || shieldRank > 7) return 0;
+    let present = 0, total = 0;
+    for (const df of [-1, 0, 1]) {
+      const sf = f + df; if (sf < 0 || sf > 7) continue;
+      total++;
+      const p = board[Chess.sqOf(sf, shieldRank)];
+      if (p && p.toUpperCase() === 'P' && Chess.colorOf(p) === color) present++;
+    }
+    return total - present;
+  }
+
+  function evaluate(state, w, status) {
+    if (status && status.over) {
+      if (status.result === '1/2-1/2') return 0;
+      return status.result === '1-0' ? 100000 : -100000;
+    }
+    const { material, pst } = materialAndPst(state, w);
+    const mobility = (countLegalMoves(state, 'w') - countLegalMoves(state, 'b')) * w.mobility;
+    const kingSafety = -(kingShieldPenalty(state, 'w') - kingShieldPenalty(state, 'b')) * w.kingSafety;
+    const pawns = pawnStructureScore(state) * w.pawnStructure;
+    return material + pst + mobility + kingSafety + pawns;
+  }
+
+  const PIECE_VAL = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
+  function orderMoves(moves) {
+    return moves.slice().sort((a, b) => {
+      const av = a.captured ? (PIECE_VAL[a.captured.toUpperCase()] - PIECE_VAL[a.piece.toUpperCase()] / 10) : (a.promotion ? 800 : 0);
+      const bv = b.captured ? (PIECE_VAL[b.captured.toUpperCase()] - PIECE_VAL[b.piece.toUpperCase()] / 10) : (b.promotion ? 800 : 0);
+      return bv - av;
+    });
+  }
+
+  function quiesce(state, alpha, beta, w, sign, qDepth, deadline) {
+    const status = Chess.gameStatus(state);
+    const standPat = sign * evaluate(state, w, status);
+    if (status.over || qDepth <= 0 || Date.now() > deadline) return standPat;
+    if (standPat >= beta) return beta;
+    if (alpha < standPat) alpha = standPat;
+    const captures = orderMoves(status.legalMoves.filter(m => m.captured || m.promotion));
+    for (const m of captures) {
+      const undo = Chess.doMove(state, m);
+      const score = -quiesce(state, -beta, -alpha, w, -sign, qDepth - 1, deadline);
+      Chess.undoMove(state, undo);
+      if (score >= beta) return beta;
+      if (score > alpha) alpha = score;
+    }
+    return alpha;
+  }
+
+  function negamax(state, depth, alpha, beta, w, sign, deadline, nc) {
+    nc.n++;
+    const status = Chess.gameStatus(state);
+    if (status.over) return sign * evaluate(state, w, status);
+    if (depth === 0 || Date.now() > deadline) return quiesce(state, alpha, beta, w, sign, 4, deadline);
+    const moves = orderMoves(status.legalMoves);
+    let best = -Infinity;
+    for (const m of moves) {
+      const undo = Chess.doMove(state, m);
+      const score = -negamax(state, depth - 1, -beta, -alpha, w, -sign, deadline, nc);
+      Chess.undoMove(state, undo);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+      if (Date.now() > deadline) break;
+    }
+    return best;
+  }
+
+  function findBestMove(state, w, maxDepth, timeBudgetMs) {
+    const status = Chess.gameStatus(state);
+    if (status.over || !status.legalMoves.length) return null;
+    const sign = state.turn === 'w' ? 1 : -1;
+    const deadline = Date.now() + Math.max(50, timeBudgetMs || 1200);
+    let bestMove = status.legalMoves[0];
+    const nc = { n: 0 };
+    for (let depth = 1; depth <= maxDepth; depth++) {
+      let alpha = -Infinity, beta = Infinity, currentBest = null, currentBestScore = -Infinity;
+      const ordered = orderMoves(bestMove ? [bestMove, ...status.legalMoves.filter(m => m !== bestMove)] : status.legalMoves);
+      for (const m of ordered) {
+        const undo = Chess.doMove(state, m);
+        const score = -negamax(state, depth - 1, -beta, -alpha, w, -sign, deadline, nc);
+        Chess.undoMove(state, undo);
+        if (score > currentBestScore) { currentBestScore = score; currentBest = m; }
+        if (score > alpha) alpha = score;
+        if (Date.now() > deadline) break;
+      }
+      if (currentBest) bestMove = currentBest;
+      if (Date.now() > deadline) break;
+    }
+    return { move: bestMove, nodes: nc.n };
+  }
+
+  return { DEFAULT_WEIGHTS, evaluate, findBestMove };
+})();
+
+/* =====================================================================
+   PERSISTENZA LOCALE — localStorage (automatico, universale) + File
+   System Access API quando disponibile (file locale vero, riaggancio
+   automatico tra una sessione e l'altra) + esportazione/importazione
+   manuale come rete di sicurezza in ogni browser.
+   ===================================================================== */
+const LocalStore = (function () {
+  const STORAGE_KEY = 'scacchi-autodidatta-v1';
+  const IDB_NAME = 'scacchi-autodidatta';
+  const IDB_STORE = 'handles';
+
+  function supportsFSAccess() { return typeof window.showSaveFilePicker === 'function'; }
+
+  function idbOpen() {
+    return new Promise((resolve) => {
+      if (!('indexedDB' in window)) return resolve(null);
+      try {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  }
+  async function idbGetHandle() {
+    const db = await idbOpen();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(IDB_STORE, 'readonly');
+        const req = tx.objectStore(IDB_STORE).get('saveFile');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  }
+  async function idbSetHandle(handle) {
+    const db = await idbOpen();
+    if (!db) return;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).put(handle, 'saveFile');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch (e) { resolve(); }
+    });
+  }
+
+  function loadLocalStorage() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+    catch (e) { return null; }
+  }
+  function saveLocalStorage(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); return true; }
+    catch (e) { return false; }
+  }
+
+  async function readHandle(handle) {
+    try {
+      const file = await handle.getFile();
+      const text = await file.text();
+      if (!text || !text.trim()) return null;
+      return JSON.parse(text);
+    } catch (e) { return null; }
+  }
+  async function writeHandle(handle, data) {
+    try {
+      const writable = await handle.createWritable();
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function pickNewer(a, b) {
+    if (!a || !a.champion) return (b && b.champion) ? b : null;
+    if (!b || !b.champion) return a;
+    if ((a.totalGames || 0) !== (b.totalGames || 0)) return (a.totalGames || 0) > (b.totalGames || 0) ? a : b;
+    if ((a.generation || 0) !== (b.generation || 0)) return (a.generation || 0) > (b.generation || 0) ? a : b;
+    return (new Date(a.updatedAt || 0) >= new Date(b.updatedAt || 0)) ? a : b;
+  }
+
+  function download(data, filename) {
+    try {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename || 'scacchi-autodidatta-salvataggio.json';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function readFromFileInput(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => { try { resolve(JSON.parse(String(reader.result))); } catch (e) { resolve(null); } };
+      reader.onerror = () => resolve(null);
+      reader.readAsText(file);
+    });
+  }
+
+  return {
+    supportsFSAccess, idbGetHandle, idbSetHandle, loadLocalStorage, saveLocalStorage,
+    readHandle, writeHandle, pickNewer, download, readFromFileInput
+  };
+})();
+
+/* =====================================================================
+   APP: rendering, self-play, apprendimento evolutivo, modalità partita,
+   persistenza locale.
+   ===================================================================== */
+(function () {
+  const CAP_ORDER = { Q: 5, R: 4, B: 3, N: 2, P: 1, q: 5, r: 4, b: 3, n: 2, p: 1 };
+  const WEIGHT_LABELS = [
+    ['N', 'Cavallo'], ['B', 'Alfiere'], ['R', 'Torre'], ['Q', 'Donna'],
+    ['pst', 'Tabelle posizionali'], ['mobility', 'Mobilità'], ['kingSafety', 'Sicurezza del Re'], ['pawnStructure', 'Struttura pedoni']
+  ];
+  const MATCH_GAMES = 2;
+  const SEARCH_TIME_BUDGET_MS = 1200;
+
+  const els = {};
+  ['setupPanel', 'persistBar', 'persistStatus', 'persistProgress', 'connectFileBtn', 'reconnectFileBtn', 'exportBtn', 'importInput', 'resetBtn',
+    'depthSetup', 'delaySetup', 'delayVal', 'playParams', 'trainParams', 'depthPlay',
+    'startBtn', 'resumeBtn',
+    'headerControls', 'depthLiveWrap', 'delayLiveWrap', 'depthLive', 'delayLive', 'pauseBtn', 'newGameBtn', 'setupBtn',
+    'stepBackBtn', 'stepFwdBtn',
+    'stage', 'lab', 'labTrain', 'labPlay', 'board', 'boardCaption',
+    'turnDot', 'turnLabel', 'statusPill',
+    'logWhite', 'logBlack', 'countWhite', 'countBlack', 'capByWhite', 'capByBlack', 'winsWhite', 'winsBlack',
+    'statGen', 'statProm', 'statGames', 'statMatch', 'weightsTable', 'sparkline', 'persistNote',
+    'hsGames', 'hsWins', 'hsDraws', 'hsLosses', 'hsChampGen',
+    'promoModal', 'promoOptions'
+  ].forEach(id => { els[id] = document.getElementById(id); });
+  els.weightsTable = document.querySelector('#weightsTable tbody');
+
+  for (const d of [2, 3, 4, 5]) { const o = document.createElement('option'); o.value = d; o.textContent = d; els.depthLive.appendChild(o); }
+
+  let settings = { mode: 'train', depth: 3, delay: 600, humanColor: 'w' };
+  let fileHandle = null;
+  let fileName = null;
+  let saveChain = Promise.resolve();
+
+  function freshWeights() { return Object.assign({}, EvalSearch.DEFAULT_WEIGHTS); }
+
+  function mutateWeights(base, forceSigma) {
+    const out = Object.assign({}, base);
+    const bounds = { N: [150, 1400], B: [150, 1400], R: [200, 1600], Q: [400, 2200], pst: [0.3, 2.5], mobility: [0, 15], kingSafety: [0, 40], pawnStructure: [0, 40] };
+    for (const key of Object.keys(out)) {
+      const sigma = forceSigma !== undefined ? forceSigma * 0.15 : (Math.random() < 0.15 ? 0.30 : 0.08);
+      const jitter = (Math.random() * 2 - 1) * sigma;
+      let v = out[key] * (1 + jitter);
+      const [lo, hi] = bounds[key];
+      out[key] = Math.min(hi, Math.max(lo, v));
+    }
+    return out;
+  }
+
+  function resetTraining() {
+    const champion = freshWeights();
+    return {
+      champion, challenger: mutateWeights(champion, 1),
+      generation: 1, promotions: 0, totalGames: 0,
+      matchScoreChallenger: 0, matchScoreChampion: 0, matchGamesPlayed: 0,
+      challengerColor: 'w', history: [],
+      humanStats: { games: 0, wins: 0, draws: 0, losses: 0 },
+      whiteWins: 0, blackWins: 0, drawGames: 0
+    };
+  }
+
+  /* Aggiorna il conteggio delle partite vinte dal Bianco e dal Nero (a
+     prescindere da chi sia campione/sfidante o dal colore dell'umano):
+     usato sia in addestramento che in partita amichevole. */
+  function recordColorResult(status) {
+    if (status.result === '1-0') training.whiteWins++;
+    else if (status.result === '0-1') training.blackWins++;
+    else training.drawGames++;
+    renderSideStats();
+  }
+
+  function renderSideStats() {
+    if (!els.winsWhite || !els.winsBlack) return;
+    const w = training.whiteWins || 0, b = training.blackWins || 0;
+    els.winsWhite.textContent = w === 1 ? '1 vittoria' : `${w} vittorie`;
+    els.winsBlack.textContent = b === 1 ? '1 vittoria' : `${b} vittorie`;
+  }
+
+  let training = resetTraining();
+  let game = null;
+  let running = false;
+  let timerId = null;
+  let viewPly = null; // null = vista dal vivo; altrimenti n. di semi-mosse mostrate rivedendo la cronologia
+
+  /* ---------------- persistenza ---------------- */
+  function serializeTraining(t) {
+    return {
+      version: 1, champion: t.champion, challenger: t.challenger, generation: t.generation, promotions: t.promotions,
+      totalGames: t.totalGames, matchScoreChallenger: t.matchScoreChallenger, matchScoreChampion: t.matchScoreChampion,
+      matchGamesPlayed: t.matchGamesPlayed, challengerColor: t.challengerColor, history: t.history.slice(-60),
+      humanStats: t.humanStats,
+      whiteWins: t.whiteWins || 0, blackWins: t.blackWins || 0, drawGames: t.drawGames || 0,
+      updatedAt: new Date().toISOString()
+    };
+  }
+  function trainingFromData(d) {
+    return {
+      champion: d.champion, challenger: d.challenger || mutateWeights(d.champion, 1),
+      generation: d.generation || 1, promotions: d.promotions || 0, totalGames: d.totalGames || 0,
+      matchScoreChallenger: d.matchScoreChallenger || 0, matchScoreChampion: d.matchScoreChampion || 0,
+      matchGamesPlayed: d.matchGamesPlayed || 0, challengerColor: d.challengerColor || 'w', history: d.history || [],
+      humanStats: Object.assign({ games: 0, wins: 0, draws: 0, losses: 0 }, d.humanStats || {}),
+      whiteWins: d.whiteWins || 0, blackWins: d.blackWins || 0, drawGames: d.drawGames || 0
+    };
+  }
+
+  function persistNow() {
+    const data = serializeTraining(training);
+    LocalStore.saveLocalStorage(data);
+    if (fileHandle) saveChain = saveChain.then(() => LocalStore.writeHandle(fileHandle, data));
+  }
+
+  function updatePersistUI(pendingHandle) {
+    let statusTxt;
+    if (fileHandle) statusTxt = `Collegato al file locale "${fileName}" — si aggiorna automaticamente ad ogni partita.`;
+    else if (pendingHandle) statusTxt = `Il file "${pendingHandle.name}" era collegato in precedenza: clicca "Ricollega file" per riattivarlo.`;
+    else if (LocalStore.supportsFSAccess()) statusTxt = 'Nessun file locale collegato — i progressi restano salvati in questo browser.';
+    else statusTxt = 'Il tuo browser non supporta il collegamento diretto a un file: i progressi restano salvati in questo browser. Usa "Esporta" per una copia su file.';
+    els.persistStatus.textContent = statusTxt;
+    els.persistProgress.textContent = training.totalGames > 0
+      ? `Generazione ${training.generation} · ${training.totalGames} partite giocate · ${training.promotions} promozioni salvate.`
+      : 'Nessuna partita ancora registrata: si parte dai pesi iniziali.';
+    els.connectFileBtn.hidden = !LocalStore.supportsFSAccess() || !!fileHandle;
+    els.reconnectFileBtn.hidden = !pendingHandle;
+    if (pendingHandle) els.reconnectFileBtn.onclick = () => reconnectPending(pendingHandle);
+    els.persistNote.textContent = fileHandle ? `Salvato automaticamente su "${fileName}"` : 'Salvato automaticamente in questo browser';
+  }
+
+  async function reconnectPending(handle) {
+    try {
+      const perm = await handle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') { alert('Permesso non concesso: il file resta scollegato.'); return; }
+      fileHandle = handle; fileName = handle.name;
+      const data = await LocalStore.readHandle(handle);
+      const merged = LocalStore.pickNewer(serializeTraining(training), data);
+      if (merged) training = trainingFromData(merged);
+      persistNow();
+      refreshAllUI();
+      updatePersistUI();
+    } catch (e) { alert('Non è stato possibile ricollegare il file.'); }
+  }
+
+  async function connectNewFile() {
+    if (!LocalStore.supportsFSAccess()) return;
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: 'scacchi-autodidatta-salvataggio.json',
+        types: [{ description: 'Salvataggio Scacchi Autodidatta', accept: { 'application/json': ['.json'] } }]
+      });
+      fileHandle = handle; fileName = handle.name;
+      await LocalStore.idbSetHandle(handle);
+      const data = await LocalStore.readHandle(handle);
+      const merged = LocalStore.pickNewer(serializeTraining(training), data);
+      if (merged) training = trainingFromData(merged);
+      persistNow();
+      refreshAllUI();
+      updatePersistUI();
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      alert('Non è stato possibile collegare il file.');
+    }
+  }
+
+  async function initPersistence() {
+    const local = LocalStore.loadLocalStorage();
+    let fileResult = null, pendingHandle = null;
+    if (LocalStore.supportsFSAccess()) {
+      try {
+        const handle = await LocalStore.idbGetHandle();
+        if (handle) {
+          const perm = await handle.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') { fileHandle = handle; fileName = handle.name; fileResult = await LocalStore.readHandle(handle); }
+          else pendingHandle = handle;
+        }
+      } catch (e) { /* nessun file riagganciabile */ }
+    }
+    const best = LocalStore.pickNewer(local, fileResult);
+    if (best) training = trainingFromData(best);
+    persistNow();
+    refreshAllUI();
+    updatePersistUI(pendingHandle);
+  }
+
+  function refreshAllUI() {
+    if (settings.mode === 'train') renderLab(); else renderHumanStats();
+    renderSideStats();
+  }
+
+  /* ---------------- rendering scacchiera ---------------- */
+  const squareEls = new Array(64);
+  function buildBoard() {
+    els.board.innerHTML = '';
+    for (let r = 7; r >= 0; r--) {
+      for (let f = 0; f < 8; f++) {
+        const s = Chess.sqOf(f, r);
+        const cell = document.createElement('div');
+        cell.className = 'sq ' + (((f + r) % 2 === 0) ? 'dark' : 'light');
+        cell.dataset.sq = String(s);
+        if (f === 0) {
+          const rankLbl = document.createElement('span');
+          rankLbl.className = 'coord rank';
+          rankLbl.textContent = String(r + 1);
+          cell.appendChild(rankLbl);
+        }
+        if (r === 0) {
+          const fileLbl = document.createElement('span');
+          fileLbl.className = 'coord file';
+          fileLbl.textContent = 'abcdefgh'[f];
+          cell.appendChild(fileLbl);
+        }
+        els.board.appendChild(cell);
+        squareEls[s] = cell;
+      }
+    }
+    els.pieceLayer = document.createElement('div');
+    els.pieceLayer.className = 'piece-layer';
+    els.board.appendChild(els.pieceLayer);
+  }
+  buildBoard();
+
+  /* ---- livello dei pezzi (nodi persistenti, animati via CSS transition) ---- */
+  const pieceAt = new Map(); // sq (0-63) -> { el, type }
+
+  function pieceIconMarkup(pieceChar) {
+    const color = Chess.colorOf(pieceChar) === 'w' ? 'white' : 'black';
+    return `<svg class="piece-icon ${color}" viewBox="0 0 100 100"><use href="#pc-${pieceChar.toUpperCase()}"></use></svg>`;
+  }
+
+  function setWrapSquare(el, sq) {
+    const f = Chess.fileOf(sq), r = Chess.rankOf(sq);
+    el.style.left = (f * 12.5) + '%';
+    el.style.top = ((7 - r) * 12.5) + '%';
+  }
+
+  function makePieceWrap(pieceChar, sq) {
+    const wrap = document.createElement('div');
+    wrap.className = 'piece-wrap';
+    wrap.innerHTML = pieceIconMarkup(pieceChar);
+    setWrapSquare(wrap, sq);
+    return wrap;
+  }
+
+  function updatePieceIcon(wrap, pieceChar) {
+    const use = wrap.querySelector('use');
+    if (use) use.setAttribute('href', '#pc-' + pieceChar.toUpperCase());
+  }
+
+  function fadeOutAndRemove(wrap) {
+    wrap.classList.add('captured-out');
+    setTimeout(() => wrap.remove(), 240);
+  }
+
+  function syncPiecesInstant(state) {
+    pieceAt.forEach(entry => entry.el.remove());
+    pieceAt.clear();
+    for (let s = 0; s < 64; s++) {
+      const p = state.board[s];
+      if (!p) continue;
+      const el = makePieceWrap(p, s);
+      els.pieceLayer.appendChild(el);
+      pieceAt.set(s, { el, type: p });
+    }
+  }
+
+  function syncPiecesForMove(state, move) {
+    if (move.captured) {
+      const capSq = move.ep ? Chess.sqOf(Chess.fileOf(move.to), Chess.rankOf(move.from)) : move.to;
+      const capEntry = pieceAt.get(capSq);
+      if (capEntry) { fadeOutAndRemove(capEntry.el); pieceAt.delete(capSq); }
+    }
+    const moverEntry = pieceAt.get(move.from);
+    if (!moverEntry) { syncPiecesInstant(state); return; }
+    pieceAt.delete(move.from);
+    setWrapSquare(moverEntry.el, move.to);
+    if (move.promotion) {
+      const promoChar = Chess.colorOf(move.piece) === 'w' ? move.promotion : move.promotion.toLowerCase();
+      updatePieceIcon(moverEntry.el, promoChar);
+      moverEntry.type = promoChar;
+    }
+    pieceAt.set(move.to, moverEntry);
+    if (move.castle) {
+      const color = Chess.colorOf(move.piece);
+      const rookFrom = move.castle === 'K' ? (color === 'w' ? 7 : 63) : (color === 'w' ? 0 : 56);
+      const rookTo = move.castle === 'K' ? (color === 'w' ? 5 : 61) : (color === 'w' ? 3 : 59);
+      const rookEntry = pieceAt.get(rookFrom);
+      if (rookEntry) {
+        pieceAt.delete(rookFrom);
+        setWrapSquare(rookEntry.el, rookTo);
+        pieceAt.set(rookTo, rookEntry);
+      }
+    }
+  }
+
+  function renderBoard(state, lastMove, opts) {
+    const instant = !!(opts && opts.instant);
+    for (let s = 0; s < 64; s++) {
+      squareEls[s].classList.remove('from', 'to', 'king-check', 'selected', 'legal-dot', 'legal-capture');
+    }
+    if (!lastMove || instant) syncPiecesInstant(state);
+    else syncPiecesForMove(state, lastMove);
+    if (lastMove) { squareEls[lastMove.from].classList.add('from'); squareEls[lastMove.to].classList.add('to'); }
+    if (Chess.inCheck(state, state.turn)) {
+      const kingSq = Chess.findKing(state.board, state.turn);
+      if (kingSq >= 0) squareEls[kingSq].classList.add('king-check');
+    }
+  }
+
+  function renderCaptured(container, arr) {
+    if (!arr.length) { container.innerHTML = '<span class="captured-empty">Nessuna cattura</span>'; return; }
+    const sorted = arr.slice().sort((a, b) => CAP_ORDER[b] - CAP_ORDER[a]);
+    container.innerHTML = sorted.map(p => `<span class="cap-piece">${pieceIconMarkup(p)}</span>`).join('');
+  }
+
+  function appendMove(container, countEl, index, text) {
+    const empty = container.querySelector('.empty-log');
+    if (empty) empty.remove();
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="idx">${index}.</span><span>${text}</span>`;
+    container.appendChild(li);
+    container.scrollTop = container.scrollHeight;
+    countEl.textContent = `${container.querySelectorAll('li').length} mosse`;
+  }
+
+  function clearLogs() {
+    els.logWhite.innerHTML = '<li class="empty-log">Nessuna mossa ancora…</li>';
+    els.logBlack.innerHTML = '<li class="empty-log">Nessuna mossa ancora…</li>';
+    els.countWhite.textContent = '0 mosse';
+    els.countBlack.textContent = '0 mosse';
+    els.capByWhite.innerHTML = '<span class="captured-empty">Nessuna cattura</span>';
+    els.capByBlack.innerHTML = '<span class="captured-empty">Nessuna cattura</span>';
+  }
+
+  function renderReadout(turnColor, statusInfo) {
+    els.turnDot.className = 'dot ' + (turnColor === 'w' ? 'white' : 'black');
+    els.turnLabel.textContent = (turnColor === 'w' ? 'Bianco' : 'Nero') + ' al tratto';
+    if (statusInfo) {
+      els.statusPill.hidden = false;
+      els.statusPill.textContent = statusInfo.text;
+      els.statusPill.className = 'status-pill' + (statusInfo.check ? ' check' : '');
+    } else {
+      els.statusPill.hidden = true;
+    }
+  }
+
+  function renderLab() {
+    els.statGen.textContent = training.generation;
+    els.statProm.textContent = training.promotions;
+    els.statGames.textContent = training.totalGames;
+    els.statMatch.textContent = `${training.matchScoreChallenger} – ${training.matchScoreChampion}`;
+    els.weightsTable.innerHTML = WEIGHT_LABELS.map(([key, label]) => {
+      const v = training.champion[key];
+      return `<tr><td>${label}</td><td class="num">${key === 'pst' ? v.toFixed(2) : Math.round(v)}</td></tr>`;
+    }).join('');
+    els.sparkline.innerHTML = training.history.map(h => `<div class="bar${h ? ' promoted' : ''}" style="height:${h ? 100 : 34}%"></div>`).join('') || '<span class="spark-label">In attesa della prima generazione…</span>';
+    updatePersistUI();
+  }
+
+  function renderHumanStats() {
+    const h = training.humanStats;
+    els.hsGames.textContent = h.games;
+    els.hsWins.textContent = h.wins;
+    els.hsDraws.textContent = h.draws;
+    els.hsLosses.textContent = h.losses;
+    els.hsChampGen.textContent = training.generation;
+    updatePersistUI();
+  }
+
+  function result_it(status) {
+    if (status.result === '1-0') return 'Vince il Bianco';
+    if (status.result === '0-1') return 'Vince il Nero';
+    return 'Patta';
+  }
+
+  /* ---------------- modalità addestramento (motore contro se stesso) ---------------- */
+  function newGameSetup() {
+    const challengerColor = training.matchGamesPlayed % 2 === 0 ? 'w' : 'b';
+    training.challengerColor = challengerColor;
+    const weightsByColor = challengerColor === 'w'
+      ? { w: training.challenger, b: training.champion }
+      : { w: training.champion, b: training.challenger };
+    game = {
+      state: Chess.newGame(), posCounts: new Map(), plies: 0,
+      weightsByColor, capturedByWhite: [], capturedByBlack: [], lastMove: null
+    };
+    viewPly = null;
+    clearLogs();
+    renderSideStats();
+    renderBoard(game.state, null);
+    els.stepBackBtn.disabled = true;
+    els.stepFwdBtn.disabled = true;
+    const gameNumInMatch = training.matchGamesPlayed + 1;
+    els.boardCaption.textContent = `Generazione ${training.generation} · partita ${gameNumInMatch}/${MATCH_GAMES} · sfidante gioca col ${challengerColor === 'w' ? 'Bianco' : 'Nero'}`;
+    renderReadout('w', null);
+    renderLab();
+  }
+
+  function finalizeGame(status) {
+    const result = status.result;
+    const challengerScore = result === '1/2-1/2' ? 0.5 : ((result === '1-0') === (training.challengerColor === 'w') ? 1 : 0);
+    training.matchScoreChallenger += challengerScore;
+    training.matchScoreChampion += (1 - challengerScore);
+    training.matchGamesPlayed++;
+    training.totalGames++;
+    recordColorResult(status);
+
+    if (training.matchGamesPlayed >= MATCH_GAMES) {
+      const promoted = training.matchScoreChallenger > training.matchScoreChampion;
+      if (promoted) { training.champion = training.challenger; training.promotions++; }
+      training.history.push(promoted ? 1 : 0);
+      if (training.history.length > 60) training.history.shift();
+      training.generation++;
+      training.challenger = mutateWeights(training.champion);
+      training.matchScoreChallenger = 0; training.matchScoreChampion = 0; training.matchGamesPlayed = 0;
+    }
+    persistNow();
+    renderLab();
+  }
+
+  function endCurrentGame(status) {
+    const state = game.state;
+    renderReadout(state.turn, { text: `${result_it(status)} — ${status.reason}`, check: false });
+    finalizeGame(status);
+    setTimeout(() => { if (running && settings.mode === 'train') { newGameSetup(); scheduleNext(0); } }, Math.max(400, settings.delay));
+  }
+
+  function stepOnce() {
+    if (!running || settings.mode !== 'train') return;
+    const state = game.state;
+    const status = Chess.gameStatus(state, game.posCounts);
+    if (status.over) { endCurrentGame(status); return; }
+    const weights = game.weightsByColor[state.turn];
+    const found = EvalSearch.findBestMove(state, weights, settings.depth, SEARCH_TIME_BUDGET_MS);
+    if (!found) { endCurrentGame({ result: '1/2-1/2', reason: 'nessuna mossa disponibile' }); return; }
+    const move = found.move;
+    const mover = state.turn;
+    Chess.doMove(state, move);
+    const posKey = Chess.positionKey(state);
+    game.posCounts.set(posKey, (game.posCounts.get(posKey) || 0) + 1);
+    game.plies++;
+    game.lastMove = move;
+
+    if (move.captured) {
+      if (mover === 'w') game.capturedByWhite.push(move.captured); else game.capturedByBlack.push(move.captured);
+      renderCaptured(els.capByWhite, game.capturedByWhite);
+      renderCaptured(els.capByBlack, game.capturedByBlack);
+    }
+
+    const givesCheck = Chess.inCheck(state, state.turn);
+    const afterStatus = Chess.gameStatus(state, game.posCounts);
+    let suffix = '';
+    if (afterStatus.over && afterStatus.reason === 'scaccomatto') suffix = '#';
+    else if (givesCheck) suffix = '+';
+    const desc = Chess.describeMove(move) + suffix;
+
+    const moveNumber = Math.ceil(game.plies / 2);
+    if (mover === 'w') appendMove(els.logWhite, els.countWhite, moveNumber, desc);
+    else appendMove(els.logBlack, els.countBlack, moveNumber, desc);
+
+    renderBoard(state, move);
+    renderReadout(state.turn, givesCheck && !afterStatus.over ? { text: 'Scacco', check: true } : null);
+    els.stepBackBtn.disabled = false;
+
+    scheduleNext(settings.delay);
+  }
+
+  function scheduleNext(delay) {
+    if (!running || settings.mode !== 'train') return;
+    clearTimeout(timerId);
+    timerId = setTimeout(stepOnce, delay);
+  }
+
+  /* ---------------- revisione mosse (Indietro / Avanti) ---------------- */
+  function replayToPly(history, ply) {
+    const st = Chess.newGame();
+    for (let i = 0; i < ply; i++) Chess.doMove(st, history[i]);
+    return st;
+  }
+
+  function renderHistoryView() {
+    if (!game || settings.mode !== 'train') return;
+    const history = game.state.history;
+    const total = history.length;
+    if (viewPly === null) {
+      renderBoard(game.state, game.lastMove, { instant: true });
+      const st = Chess.gameStatus(game.state, game.posCounts);
+      const givesCheck = Chess.inCheck(game.state, game.state.turn);
+      renderReadout(game.state.turn, st.over ? { text: `${result_it(st)} — ${st.reason}`, check: false } : (givesCheck ? { text: 'Scacco', check: true } : null));
+      els.stepBackBtn.disabled = total === 0;
+      els.stepFwdBtn.disabled = true;
+    } else {
+      const st = replayToPly(history, viewPly);
+      const lastMove = viewPly > 0 ? history[viewPly - 1] : null;
+      renderBoard(st, lastMove, { instant: true });
+      renderReadout(st.turn, { text: `Revisione: mossa ${viewPly} di ${total}`, check: Chess.inCheck(st, st.turn) });
+      els.stepBackBtn.disabled = viewPly <= 0;
+      els.stepFwdBtn.disabled = false;
+    }
+  }
+
+  function stopForReview() {
+    if (running) {
+      running = false;
+      clearTimeout(timerId);
+      els.pauseBtn.textContent = 'Riprendi';
+    }
+  }
+
+  function stepBack() {
+    if (!game || settings.mode !== 'train') return;
+    stopForReview();
+    const total = game.state.history.length;
+    viewPly = viewPly === null ? Math.max(0, total - 1) : Math.max(0, viewPly - 1);
+    renderHistoryView();
+  }
+
+  function stepForward() {
+    if (!game || settings.mode !== 'train' || viewPly === null) return;
+    const total = game.state.history.length;
+    viewPly = Math.min(total, viewPly + 1);
+    if (viewPly >= total) viewPly = null;
+    renderHistoryView();
+  }
+
+  els.stepBackBtn.addEventListener('click', stepBack);
+  els.stepFwdBtn.addEventListener('click', stepForward);
+
+  /* ---------------- modalità partita (umano contro il motore) ---------------- */
+  function startPlayGame() {
+    game = {
+      state: Chess.newGame(), posCounts: new Map(), plies: 0,
+      capturedByWhite: [], capturedByBlack: [], lastMove: null, selected: null
+    };
+    viewPly = null;
+    clearLogs();
+    renderSideStats();
+    renderBoard(game.state, null);
+    els.boardCaption.textContent = `Partita amichevole · tu giochi col ${settings.humanColor === 'w' ? 'Bianco' : 'Nero'} · motore alla generazione ${training.generation}`;
+    renderReadout('w', settings.humanColor === 'w' ? { text: 'Tocca a te', check: false } : null);
+    renderHumanStats();
+    updateBoardInteractivity();
+    if (game.state.turn !== settings.humanColor) setTimeout(engineMovePlay, 350);
+  }
+
+  function updateBoardInteractivity() {
+    const over = game ? Chess.gameStatus(game.state, game.posCounts).over : true;
+    const interactive = settings.mode === 'play' && running && game && !over && game.state.turn === settings.humanColor;
+    els.board.classList.toggle('interactive', !!interactive);
+  }
+
+  function clearSelection() {
+    if (game && typeof game.selected === 'number') squareEls[game.selected].classList.remove('selected');
+    squareEls.forEach(el => el.classList.remove('legal-dot', 'legal-capture'));
+    if (game) game.selected = null;
+  }
+
+  function selectSquare(sq, legal) {
+    clearSelection();
+    game.selected = sq;
+    squareEls[sq].classList.add('selected');
+    legal.filter(m => m.from === sq).forEach(m => {
+      squareEls[m.to].classList.add((m.captured || m.ep) ? 'legal-capture' : 'legal-dot');
+    });
+  }
+
+  function onBoardClick(e) {
+    if (settings.mode !== 'play' || !running || !game) return;
+    const cell = e.target.closest('.sq');
+    if (!cell) return;
+    const sq = parseInt(cell.dataset.sq, 10);
+    const state = game.state;
+    if (state.turn !== settings.humanColor) return;
+    const status = Chess.gameStatus(state, game.posCounts);
+    if (status.over) return;
+    const legal = status.legalMoves;
+
+    if (typeof game.selected !== 'number') {
+      const piece = state.board[sq];
+      if (piece && Chess.colorOf(piece) === settings.humanColor) selectSquare(sq, legal);
+      return;
+    }
+    if (sq === game.selected) { clearSelection(); return; }
+    const pieceAtSq = state.board[sq];
+    if (pieceAtSq && Chess.colorOf(pieceAtSq) === settings.humanColor) { selectSquare(sq, legal); return; }
+    const candidates = legal.filter(m => m.from === game.selected && m.to === sq);
+    if (!candidates.length) { clearSelection(); return; }
+    if (candidates.length > 1) { showPromotionPicker(candidates); return; }
+    applyMovePlay(candidates[0]);
+  }
+  els.board.addEventListener('click', onBoardClick);
+
+  function showPromotionPicker(candidates) {
+    const color = Chess.colorOf(candidates[0].piece);
+    els.promoOptions.innerHTML = '';
+    ['Q', 'R', 'B', 'N'].forEach(letter => {
+      const mv = candidates.find(c => c.promotion === letter);
+      if (!mv) return;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'promo-btn';
+      btn.innerHTML = pieceIconMarkup(color === 'w' ? letter : letter.toLowerCase());
+      btn.setAttribute('aria-label', Chess.PIECE_NAMES_IT[letter]);
+      btn.addEventListener('click', () => { hidePromotionPicker(); applyMovePlay(mv); });
+      els.promoOptions.appendChild(btn);
+    });
+    els.promoModal.hidden = false;
+  }
+  function hidePromotionPicker() { els.promoModal.hidden = true; }
+
+  function applyMovePlay(move) {
+    if (settings.mode !== 'play' || !running || !game) return;
+    const state = game.state;
+    const mover = state.turn;
+    clearSelection();
+    Chess.doMove(state, move);
+    const posKey = Chess.positionKey(state);
+    game.posCounts.set(posKey, (game.posCounts.get(posKey) || 0) + 1);
+    game.plies++;
+    game.lastMove = move;
+
+    if (move.captured) {
+      if (mover === 'w') game.capturedByWhite.push(move.captured); else game.capturedByBlack.push(move.captured);
+      renderCaptured(els.capByWhite, game.capturedByWhite);
+      renderCaptured(els.capByBlack, game.capturedByBlack);
+    }
+
+    const givesCheck = Chess.inCheck(state, state.turn);
+    const afterStatus = Chess.gameStatus(state, game.posCounts);
+    let suffix = '';
+    if (afterStatus.over && afterStatus.reason === 'scaccomatto') suffix = '#';
+    else if (givesCheck) suffix = '+';
+    const desc = Chess.describeMove(move) + suffix;
+    const moveNumber = Math.ceil(game.plies / 2);
+    if (mover === 'w') appendMove(els.logWhite, els.countWhite, moveNumber, desc);
+    else appendMove(els.logBlack, els.countBlack, moveNumber, desc);
+    renderBoard(state, move);
+
+    if (afterStatus.over) {
+      renderReadout(state.turn, { text: `${result_it(afterStatus)} — ${afterStatus.reason}`, check: false });
+      finalizePlayGame(afterStatus);
+      updateBoardInteractivity();
+      return;
+    }
+    const nextIsHuman = state.turn === settings.humanColor;
+    const statusInfo = givesCheck ? { text: 'Scacco', check: true } : (nextIsHuman ? { text: 'Tocca a te', check: false } : { text: 'Il motore riflette…', check: false });
+    renderReadout(state.turn, statusInfo);
+    updateBoardInteractivity();
+    if (!nextIsHuman) setTimeout(engineMovePlay, 350);
+  }
+
+  function engineMovePlay() {
+    if (settings.mode !== 'play' || !running || !game) return;
+    const state = game.state;
+    const status = Chess.gameStatus(state, game.posCounts);
+    if (status.over) return;
+    setTimeout(() => {
+      if (settings.mode !== 'play' || !running || !game) return;
+      const found = EvalSearch.findBestMove(state, training.champion, settings.depth, SEARCH_TIME_BUDGET_MS);
+      if (!found) return;
+      applyMovePlay(found.move);
+    }, 30);
+  }
+
+  function finalizePlayGame(status) {
+    training.humanStats.games++;
+    if (status.result === '1/2-1/2') training.humanStats.draws++;
+    else if ((status.result === '1-0') === (settings.humanColor === 'w')) training.humanStats.wins++;
+    else training.humanStats.losses++;
+    recordColorResult(status);
+    persistNow();
+    renderHumanStats();
+  }
+
+  /* ---------------- avvio / navigazione ---------------- */
+  function showRunView() {
+    els.setupPanel.hidden = true;
+    els.headerControls.hidden = false;
+    els.stage.hidden = false;
+    els.lab.hidden = false;
+    running = true;
+  }
+
+  function configureHeaderForMode() {
+    const train = settings.mode === 'train';
+    els.depthLiveWrap.hidden = !train;
+    els.delayLiveWrap.hidden = !train;
+    els.pauseBtn.hidden = !train;
+    els.stepBackBtn.hidden = !train;
+    els.stepFwdBtn.hidden = !train;
+    els.newGameBtn.hidden = train;
+    els.labTrain.hidden = !train;
+    els.labPlay.hidden = train;
+  }
+
+  function beginTrainRun() {
+    showRunView();
+    configureHeaderForMode();
+    els.depthLive.value = String(settings.depth);
+    els.delayLive.value = String(settings.delay);
+    els.pauseBtn.textContent = 'Pausa';
+    newGameSetup();
+    scheduleNext(300);
+  }
+
+  function beginPlayRun() {
+    showRunView();
+    configureHeaderForMode();
+    startPlayGame();
+  }
+
+  function resumeCurrentSession() {
+    if (!game) return;
+    showRunView();
+    configureHeaderForMode();
+    viewPly = null;
+    if (settings.mode === 'train') {
+      els.depthLive.value = String(settings.depth);
+      els.delayLive.value = String(settings.delay);
+      els.pauseBtn.textContent = 'Pausa';
+      renderBoard(game.state, game.lastMove, { instant: true });
+      els.stepBackBtn.disabled = game.state.history.length === 0;
+      els.stepFwdBtn.disabled = true;
+      renderLab();
+      scheduleNext(300);
+    } else {
+      renderBoard(game.state, game.lastMove, { instant: true });
+      renderHumanStats();
+      updateBoardInteractivity();
+      const st = Chess.gameStatus(game.state, game.posCounts);
+      if (!st.over && game.state.turn !== settings.humanColor) engineMovePlay();
+    }
+  }
+
+  function currentMode() { return document.querySelector('input[name="mode"]:checked').value; }
+  function currentHumanColorChoice() {
+    const v = document.querySelector('input[name="humanColor"]:checked').value;
+    return v === 'random' ? (Math.random() < 0.5 ? 'w' : 'b') : v;
+  }
+  function updateModeVisibility() {
+    const mode = currentMode();
+    els.trainParams.hidden = mode !== 'train';
+    els.playParams.hidden = mode !== 'play';
+    els.startBtn.textContent = mode === 'play' ? 'Inizia partita' : 'Avvia addestramento';
+  }
+  document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener('change', updateModeVisibility));
+  updateModeVisibility();
+
+  els.delaySetup.addEventListener('input', () => { els.delayVal.textContent = els.delaySetup.value; });
+
+  els.startBtn.addEventListener('click', () => {
+    settings.mode = currentMode();
+    if (settings.mode === 'train') {
+      settings.depth = parseInt(els.depthSetup.value, 10);
+      settings.delay = parseInt(els.delaySetup.value, 10);
+      game = null;
+      beginTrainRun();
+    } else {
+      settings.depth = parseInt(els.depthPlay.value, 10);
+      settings.humanColor = currentHumanColorChoice();
+      beginPlayRun();
+    }
+  });
+
+  els.resumeBtn.addEventListener('click', () => { resumeCurrentSession(); });
+
+  els.depthLive.addEventListener('change', () => { settings.depth = parseInt(els.depthLive.value, 10); });
+  els.delayLive.addEventListener('change', () => { settings.delay = Math.max(100, parseInt(els.delayLive.value, 10) || 600); });
+
+  els.pauseBtn.addEventListener('click', () => {
+    running = !running;
+    els.pauseBtn.textContent = running ? 'Pausa' : 'Riprendi';
+    viewPly = null;
+    clearTimeout(timerId);
+    renderHistoryView();
+    if (running) {
+      scheduleNext(200);
+    } else {
+      renderReadout(game ? game.state.turn : 'w', { text: 'In pausa', check: false });
+    }
+  });
+
+  els.newGameBtn.addEventListener('click', () => { startPlayGame(); });
+
+  els.setupBtn.addEventListener('click', () => {
+    running = false;
+    clearTimeout(timerId);
+    hidePromotionPicker();
+    if (game) clearSelection();
+    els.stage.hidden = true;
+    els.lab.hidden = true;
+    els.headerControls.hidden = true;
+    els.depthSetup.value = String(settings.depth);
+    els.delaySetup.value = String(settings.delay);
+    els.delayVal.textContent = String(settings.delay);
+    els.resumeBtn.hidden = !game;
+    updatePersistUI();
+    els.setupPanel.hidden = false;
+  });
+
+  els.connectFileBtn.addEventListener('click', connectNewFile);
+
+  async function tryDownloadsCapability(filename, jsonText) {
+    try {
+      if (!window.claude || typeof window.claude.use !== 'function') return false;
+      const downloads = await window.claude.use('downloads');
+      if (!downloads) return false;
+      await downloads.save({ filename, data: jsonText });
+      return true;
+    } catch (e) { return false; }
+  }
+
+  els.exportBtn.addEventListener('click', async () => {
+    const data = serializeTraining(training);
+    const filename = 'scacchi-autodidatta-salvataggio.json';
+    const viaCapability = await tryDownloadsCapability(filename, JSON.stringify(data, null, 2));
+    if (viaCapability) return;
+    const ok = LocalStore.download(data, filename);
+    if (!ok) alert('Esportazione non riuscita in questo contesto. Prova ad aprire il file HTML direttamente nel browser (fuori da Claude).');
+  });
+
+  els.importInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    const data = await LocalStore.readFromFileInput(file);
+    if (!data || !data.champion) { alert('Il file selezionato non sembra un salvataggio valido.'); return; }
+    const merged = LocalStore.pickNewer(serializeTraining(training), data);
+    if (merged) training = trainingFromData(merged);
+    persistNow();
+    refreshAllUI();
+    updatePersistUI();
+  });
+
+  els.resetBtn.addEventListener('click', () => {
+    if (!confirm('Cancellare tutti i progressi di addestramento salvati (pesi, generazioni, statistiche)? L\'azione non è reversibile su questo dispositivo.')) return;
+    training = resetTraining();
+    persistNow();
+    refreshAllUI();
+    updatePersistUI();
+  });
+
+  initPersistence();
+})();
+</script>
