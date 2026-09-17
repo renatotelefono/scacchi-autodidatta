@@ -640,7 +640,40 @@ const Chess = (function () {
           const to = sqOf(f, r);
           const target = board[to];
           if (target && colorOf(target) === opp) addPawnMove(moves, s, to, p, target, promoRank === r);
-          else if (!target && state.ep === to) moves.push({ from: s, to, piece: p, captured: board[sqOf(f, r0)], promotion: null, ep: true, castle: null, isDouble: false });
+          else if (!target && state.ep === to) {
+            // BUG GRAVE CORRETTO: qui si generava una mossa "en passant"
+            // fidandosi ciecamente di `state.ep === to`, senza controllare
+            // che sulla casella del presunto pedone catturato ci fosse
+            // DAVVERO un pedone avversario. Normalmente non fa differenza,
+            // perché è sempre il colore giusto (l'avversario di chi ha
+            // appena fatto la doppia spinta) a generare le proprie mosse.
+            // Ma evaluate() conta la mobilità con countLegalMoves(state,'w')
+            // e countLegalMoves(state,'b'), che forzano TEMPORANEAMENTE
+            // state.turn su entrambi i colori per contare le mosse di
+            // ciascuno — ANCHE quello che NON deve muovere davvero in quel
+            // momento. Se `state.ep` è ancora valido (appena impostato dalla
+            // doppia spinta di un pedone), questo faceva generare una finta
+            // cattura "en passant" anche per un pedone dello STESSO colore
+            // che ha appena mosso (che non può mai catturare en passant se
+            // stesso), con `captured` letto da una casella in realtà VUOTA.
+            // La mossa fasulla (captured:null, ep:true) veniva comunque
+            // esplorata con doMove/undoMove per il solo controllo di
+            // legalità: undoMove, vedendo ep:true, rimetteva INCONDIZIONATA-
+            // MENTE un pedone avversario sulla casella "catturata" — anche
+            // se lì non c'era mai stato nulla — materializzando un pedone
+            // fantasma permanente sulla scacchiera VERA della partita (non
+            // solo in un ramo di ricerca temporaneo, perché evaluate() opera
+            // sullo stesso oggetto stato condiviso con la partita reale).
+            // Questo spiega la scacchiera corrotta segnalata dall'utente
+            // (un pedone "in più" apparso dopo poche mosse). Corretto
+            // verificando che la casella presunta contenga davvero un
+            // pedone avversario prima di generare la mossa.
+            const capSq = sqOf(f, r0);
+            const capPiece = board[capSq];
+            if (capPiece && colorOf(capPiece) === opp && capPiece.toUpperCase() === 'P') {
+              moves.push({ from: s, to, piece: p, captured: capPiece, promotion: null, ep: true, castle: null, isDouble: false });
+            }
+          }
         }
       } else if (type === 'N' || type === 'K') {
         const deltas = type === 'N' ? KNIGHT_DELTAS : KING_DELTAS;
@@ -726,7 +759,14 @@ const Chess = (function () {
     board[move.from] = move.piece;
     if (move.castle === 'K') { if (color === 'w') { board[5] = null; board[7] = 'R'; } else { board[61] = null; board[63] = 'r'; } }
     else if (move.castle === 'Q') { if (color === 'w') { board[3] = null; board[0] = 'R'; } else { board[59] = null; board[56] = 'r'; } }
-    if (move.ep) board[undo.capturedSquare] = color === 'w' ? 'p' : 'P';
+    // Difesa in profondità: ripristina il pedone catturato en passant SOLO
+    // se la mossa aveva davvero catturato qualcosa (move.captured valorizzato
+    // da genPseudoMoves). Prima si ripristinava incondizionatamente in base
+    // al solo flag `ep`, il che poteva materializzare un pedone fantasma se
+    // una mossa "en passant" malformata fosse mai stata generata/eseguita
+    // senza un pedone avversario realmente presente (vedi la correzione in
+    // genPseudoMoves poco sopra, causa principale già risolta lì).
+    if (move.ep) { if (move.captured) board[undo.capturedSquare] = color === 'w' ? 'p' : 'P'; }
     else if (move.captured) board[undo.capturedSquare] = move.captured;
   }
 
