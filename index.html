@@ -826,7 +826,16 @@ const EvalSearch = (function () {
     B: buildPST([[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]]),
     R: buildPST([[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]]),
     Q: buildPST([[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]]),
-    K: buildPST([[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]])
+    // Righe "rank1"/"rank2" volutamente PIATTE (nessuna casella premiata più
+    // delle altre): in precedenza g1/g2 valevano più di e1, quindi il motore
+    // "fingeva" di arroccare camminando col re (Re-f2, poi Re-g2) perdendo
+    // il diritto all'arrocco vero e un tempo di sviluppo per un premio di
+    // posizione identico a quello di un arrocco reale. La sicurezza del re
+    // una volta sviluppato resta comunque garantita da kingShieldPenalty
+    // (pedoni di scudo) e dal bonus esplicito per i diritti di arrocco
+    // intatti in evaluate(), che insieme incoraggiano l'arrocco vero senza
+    // rendere conveniente il "finto arrocco" a piedi.
+    K: buildPST([[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[0,0,0,0,0,0,0,0],[5,5,5,0,0,5,5,5]])
   };
   const PST_B = {}; for (const k in PST_W) PST_B[k] = mirror(PST_W[k]);
 
@@ -930,7 +939,17 @@ const EvalSearch = (function () {
     const mobility = (countLegalMoves(state, 'w') - countLegalMoves(state, 'b')) * w.mobility;
     const kingSafety = -(kingShieldPenalty(state, 'w') - kingShieldPenalty(state, 'b')) * w.kingSafety;
     const pawns = pawnStructureScore(state) * w.pawnStructure;
-    return material + pst + mobility + kingSafety + pawns;
+    // Piccolo bonus per mantenere intatti i diritti di arrocco: senza
+    // questo il motore è indifferente tra "arroccare davvero" e "muovere il
+    // re/la torre a caso perdendo il diritto", perché il materiale e le PST
+    // da sole non "sanno" che l'arrocco è un'opzione preziosa da conservare.
+    // Non è legato ai pesi allenabili (resta fisso) per non dover toccare
+    // il formato dei pesi salvati/mutati altrove.
+    const castleRights =
+      ((state.castle.K ? 1 : 0) + (state.castle.Q ? 1 : 0)) -
+      ((state.castle.k ? 1 : 0) + (state.castle.q ? 1 : 0));
+    const castleBonus = castleRights * 12;
+    return material + pst + mobility + kingSafety + pawns + castleBonus;
   }
 
   const PIECE_VAL = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
