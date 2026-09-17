@@ -962,20 +962,41 @@ const EvalSearch = (function () {
   }
 
   function quiesce(state, alpha, beta, w, sign, qDepth, deadline) {
+    // BUG GRAVE CORRETTO: questa funzione usava un "fail-hard" (restituiva
+    // letteralmente `beta` quando la posizione era già abbastanza buona da
+    // tagliare la ricerca), invece del vero valore trovato. Nella ricerca a
+    // radice (findBestMove), dopo la prima mossa candidata (spesso la
+    // migliore, es. una cattura, perché le mosse sono ordinate per valore),
+    // la finestra alpha-beta per TUTTE le mosse successive si restringe
+    // attorno a quel punteggio. Se una di quelle mosse successive è in
+    // realtà molto peggiore (es. lascia un pezzo in presa), la quiescence
+    // search del nero la giudica "abbastanza buona da tagliare" (fail-high
+    // contro la finestra stretta) e restituiva `beta` — che per costruzione
+    // equivale ESATTAMENTE al punteggio della prima mossa migliore — invece
+    // del vero punteggio (molto più alto per il nero, quindi molto peggiore
+    // per il bianco). Risultato concreto: qualunque mossa, anche pessima,
+    // finiva per avere lo STESSO punteggio della mossa migliore già trovata,
+    // e la scelta finale diventava sostanzialmente casuale fra "prendi la
+    // donna gratis" e "ignora la donna in presa". Corretto passando a
+    // "fail-soft": si restituisce sempre il vero miglior valore trovato
+    // (`best`), mai il bound `beta` in sé — esattamente come fa già
+    // negamax() qui sotto, che infatti non aveva questo bug.
     const status = Chess.gameStatus(state);
     const standPat = sign * evaluate(state, w, status);
     if (status.over || qDepth <= 0 || Date.now() > deadline) return standPat;
-    if (standPat >= beta) return beta;
-    if (alpha < standPat) alpha = standPat;
+    let best = standPat;
+    if (best >= beta) return best;
+    if (alpha < best) alpha = best;
     const captures = orderMoves(status.legalMoves.filter(m => m.captured || m.promotion));
     for (const m of captures) {
       const undo = Chess.doMove(state, m);
       const score = -quiesce(state, -beta, -alpha, w, -sign, qDepth - 1, deadline);
       Chess.undoMove(state, undo);
-      if (score >= beta) return beta;
-      if (score > alpha) alpha = score;
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
     }
-    return alpha;
+    return best;
   }
 
   function negamax(state, depth, alpha, beta, w, sign, deadline, nc) {
@@ -1082,8 +1103,19 @@ const EvalSearch = (function () {
         // sempre sulla stessa linea — ma solo fra mosse di valore comparabile.
         const rawBest = Math.max(...evaluated.map(e => e.score));
         const pool = evaluated.filter(e => e.score >= rawBest - REPETITION_SAFETY_MARGIN);
-        pool.sort((a, b) => b.adjusted - a.adjusted);
-        bestMove = pool[0].m;
+        // Nei finali con pochissimi pezzi la ricerca profonda (depthBoost) può
+        // scoprire che il matto è comunque forzato entro pochissime mosse sia
+        // catturando un pezzo indifeso sia ignorandolo (il pezzo avversario
+        // rimasto è comunque irrilevante per l'esito): i punteggi finiscono
+        // così entro il margine di varietà e la mossa casuale potrebbe
+        // "dimenticare" di catturare un pezzo gratis senza nessun vantaggio
+        // reale nel farlo. Per restare intuitivo (un umano prende sempre un
+        // pezzo gratis a parità di tutto il resto), se il pool contiene una o
+        // più catture/promozioni si sceglie solo fra quelle.
+        const capturesInPool = pool.filter(e => e.m.captured || e.m.promotion);
+        const finalPool = capturesInPool.length ? capturesInPool : pool;
+        finalPool.sort((a, b) => b.adjusted - a.adjusted);
+        bestMove = finalPool[0].m;
       }
       if (Date.now() > deadline) break;
     }
