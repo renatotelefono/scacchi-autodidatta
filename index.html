@@ -203,10 +203,15 @@
 
   .move-log { list-style: none; margin: 0; padding: 4px 8px 12px; max-height: 380px; overflow-y: auto; font-family: 'IBM Plex Mono', monospace; }
   .move-log li {
-    display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 8px; font-size: .83rem;
+    display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 8px; font-size: .83rem; flex-wrap: wrap;
   }
   .move-log li:last-child { background: var(--surface-2); font-weight: 600; }
   .move-log li .idx { color: var(--ink-soft); min-width: 1.6em; text-align: right; }
+  .move-log li .mv-text { flex: 1 1 auto; }
+  .move-log li .mv-eval { margin-left: auto; font-size: .76rem; color: var(--ink-soft); white-space: nowrap; }
+  .move-log li .mv-eval .mv-delta { font-weight: 700; }
+  .move-log li .mv-eval .mv-delta.up { color: var(--good); }
+  .move-log li .mv-eval .mv-delta.down { color: var(--brick); }
   .move-log .empty-log { color: var(--ink-soft); font-style: italic; padding: 10px 8px; font-family: 'Karla', sans-serif; font-size: .85rem; }
 
   /* ---- board ---- */
@@ -1663,11 +1668,33 @@ const RemoteStore = (function () {
     container.innerHTML = sorted.map(p => `<span class="cap-piece">${pieceIconMarkup(p)}</span>`).join('');
   }
 
-  function appendMove(container, countEl, index, text) {
+  // Converte un punteggio grezzo di EvalSearch.evaluate() (centesimi di
+  // pedone, dal punto di vista del Bianco) in una stringa leggibile tipo
+  // "+0.35" o "-1.20"; i punteggi di matto (±100000) diventano "#".
+  function formatEval(raw) {
+    if (raw >= 100000) return '#';
+    if (raw <= -100000) return '−#';
+    const p = raw / 100;
+    const sign = p > 0 ? '+' : (p < 0 ? '−' : '');
+    return sign + Math.abs(p).toFixed(2);
+  }
+
+  // Mostra "valutazione prima → dopo" accanto alla mossa, dal punto di vista
+  // del Bianco, così si vede a colpo d'occhio se la mossa ha migliorato o
+  // peggiorato la posizione di chi l'ha giocata (freccia verde/rossa in base
+  // al guadagno/perdita dal punto di vista di chi muove, non del Bianco).
+  function appendMove(container, countEl, index, text, evalBefore, evalAfter, moverColor) {
     const empty = container.querySelector('.empty-log');
     if (empty) empty.remove();
     const li = document.createElement('li');
-    li.innerHTML = `<span class="idx">${index}.</span><span>${text}</span>`;
+    let evalHtml = '';
+    if (typeof evalBefore === 'number' && typeof evalAfter === 'number') {
+      const sign = moverColor === 'b' ? -1 : 1;
+      const deltaForMover = (evalAfter - evalBefore) * sign;
+      const cls = deltaForMover > 15 ? 'up' : (deltaForMover < -15 ? 'down' : '');
+      evalHtml = `<span class="mv-eval">${formatEval(evalBefore)} → <span class="mv-delta ${cls}">${formatEval(evalAfter)}</span></span>`;
+    }
+    li.innerHTML = `<span class="idx">${index}.</span><span class="mv-text">${text}</span>${evalHtml}`;
     container.appendChild(li);
     container.scrollTop = container.scrollHeight;
     countEl.textContent = `${container.querySelectorAll('li').length} mosse`;
@@ -1808,6 +1835,11 @@ const RemoteStore = (function () {
     const status = Chess.gameStatus(state, game.posCounts);
     if (status.over) { endCurrentGame(status); return; }
     const weights = game.weightsByColor[state.turn];
+    // Valutazione statica (senza ricerca) della posizione prima di muovere,
+    // dal punto di vista del Bianco, con gli stessi pesi con cui il motore
+    // sceglie la mossa: serve solo a mostrare "prima → dopo" nel registro
+    // mosse, non influenza la scelta della mossa stessa.
+    const evalBefore = EvalSearch.evaluate(state, weights, status);
     const found = EvalSearch.findBestMove(state, weights, settings.depth, SEARCH_TIME_BUDGET_MS, game.posCounts);
     if (!found) { endCurrentGame({ result: '1/2-1/2', reason: 'nessuna mossa disponibile' }); return; }
     const move = found.move;
@@ -1826,14 +1858,15 @@ const RemoteStore = (function () {
 
     const givesCheck = Chess.inCheck(state, state.turn);
     const afterStatus = Chess.gameStatus(state, game.posCounts);
+    const evalAfter = EvalSearch.evaluate(state, weights, afterStatus);
     let suffix = '';
     if (afterStatus.over && afterStatus.reason === 'scaccomatto') suffix = '#';
     else if (givesCheck) suffix = '+';
     const desc = Chess.describeMove(move) + suffix;
 
     const moveNumber = Math.ceil(game.plies / 2);
-    if (mover === 'w') appendMove(els.logWhite, els.countWhite, moveNumber, desc);
-    else appendMove(els.logBlack, els.countBlack, moveNumber, desc);
+    if (mover === 'w') appendMove(els.logWhite, els.countWhite, moveNumber, desc, evalBefore, evalAfter, mover);
+    else appendMove(els.logBlack, els.countBlack, moveNumber, desc, evalBefore, evalAfter, mover);
 
     renderBoard(state, move);
     renderReadout(state.turn, givesCheck && !afterStatus.over ? { text: 'Scacco', check: true } : null);
@@ -2091,6 +2124,12 @@ const RemoteStore = (function () {
     const state = game.state;
     const mover = state.turn;
     clearSelection();
+    // Valutazione statica prima della mossa (pesi del campione, gli stessi
+    // con cui gioca il motore), per mostrare "prima → dopo" nel registro
+    // mosse — sia per le mosse del motore sia per le tue, così puoi vedere
+    // subito se una mossa ha migliorato o peggiorato la posizione.
+    const statusBefore = Chess.gameStatus(state, game.posCounts);
+    const evalBefore = EvalSearch.evaluate(state, training.champion, statusBefore);
     Chess.doMove(state, move);
     const posKey = Chess.positionKey(state);
     game.posCounts.set(posKey, (game.posCounts.get(posKey) || 0) + 1);
@@ -2105,13 +2144,14 @@ const RemoteStore = (function () {
 
     const givesCheck = Chess.inCheck(state, state.turn);
     const afterStatus = Chess.gameStatus(state, game.posCounts);
+    const evalAfter = EvalSearch.evaluate(state, training.champion, afterStatus);
     let suffix = '';
     if (afterStatus.over && afterStatus.reason === 'scaccomatto') suffix = '#';
     else if (givesCheck) suffix = '+';
     const desc = Chess.describeMove(move) + suffix;
     const moveNumber = Math.ceil(game.plies / 2);
-    if (mover === 'w') appendMove(els.logWhite, els.countWhite, moveNumber, desc);
-    else appendMove(els.logBlack, els.countBlack, moveNumber, desc);
+    if (mover === 'w') appendMove(els.logWhite, els.countWhite, moveNumber, desc, evalBefore, evalAfter, mover);
+    else appendMove(els.logBlack, els.countBlack, moveNumber, desc, evalBefore, evalAfter, mover);
     renderBoard(state, move);
 
     if (afterStatus.over) {
@@ -2162,7 +2202,10 @@ const RemoteStore = (function () {
 
   function configureHeaderForMode() {
     const train = settings.mode === 'train';
-    els.depthLiveWrap.hidden = !train;
+    // La profondità resta modificabile anche mentre giochi tu contro il
+    // motore (non solo in addestramento): così puoi alzarla e vedere subito,
+    // mossa dopo mossa, se il motore gioca meglio quando guarda più lontano.
+    els.depthLiveWrap.hidden = false;
     els.delayLiveWrap.hidden = !train;
     els.postGameDelayLiveWrap.hidden = !train;
     els.pauseBtn.hidden = !train;
@@ -2187,6 +2230,7 @@ const RemoteStore = (function () {
   function beginPlayRun() {
     showRunView();
     configureHeaderForMode();
+    els.depthLive.value = String(settings.depth);
     startPlayGame();
   }
 
@@ -2195,8 +2239,8 @@ const RemoteStore = (function () {
     showRunView();
     configureHeaderForMode();
     viewPly = null;
+    els.depthLive.value = String(settings.depth);
     if (settings.mode === 'train') {
-      els.depthLive.value = String(settings.depth);
       els.delayLive.value = String(settings.delay);
       els.postGameDelayLive.value = String(settings.postGameDelaySec);
       els.pauseBtn.textContent = 'Pausa';
